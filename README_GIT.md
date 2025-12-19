@@ -4,27 +4,26 @@
 
 O PowerShell do Windows pode ter problemas com encoding UTF-8 nos commits do Git, causando caracteres como "Ã§Ã£o" em vez de "ção".
 
-## ✅ Solução: Script de Commit
+## ✅ Solução Recomendada: Usar Git Bash
 
-Use o script `scripts/commit-utf8.ps1` para fazer commits com encoding correto:
+**A melhor solução é usar Git Bash** (que vem com o Git for Windows) em vez do PowerShell:
 
-```powershell
-.\scripts\commit-utf8.ps1 "feat: Adiciona funcionalidade de login"
+1. Abra o **Git Bash**
+2. Navegue até o projeto: `cd /d/BACKUP\ GERAL/CCB\ -\ SECRETARIA\ MUSICAL/REGIONAL\ ITAPEVI/APPMUSICALIZACAO/APPMUSICALIZACAO`
+3. Faça commits normalmente:
+```bash
+git commit -m "feat: Adiciona funcionalidade de login"
 ```
 
-## 🔧 Configuração Manual
+## 🔧 Solução Alternativa: Script PowerShell
 
-Se preferir fazer commits manualmente, configure antes:
+Se precisar usar PowerShell, use o script `scripts/commit-utf8-safe.ps1`:
 
 ```powershell
-# No PowerShell, antes de fazer commit:
-chcp 65001
-$env:LANG = "pt_BR.UTF-8"
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-# Depois faça o commit normalmente:
-git commit -m "sua mensagem com acentos"
+.\scripts\commit-utf8-safe.ps1 "feat: Adiciona funcionalidade de login"
 ```
+
+Este script cria um arquivo temporário com encoding UTF-8 correto.
 
 ## 📋 Configurações Aplicadas
 
@@ -36,5 +35,16 @@ As seguintes configurações já foram aplicadas no Git:
 
 ## 🔄 Corrigir Commits Anteriores
 
-Para corrigir commits anteriores com encoding incorreto, veja o arquivo `CORRECAO_ENCODING.md`.
+Para corrigir commits anteriores com encoding incorreto, use rebase interativo no **Git Bash**:
+
+```bash
+# No Git Bash:
+git rebase -i HEAD~5
+# Mude 'pick' para 'reword' nos commits que quer corrigir
+# Edite as mensagens com acentos corretos
+```
+
+## 💡 Dica
+
+Para commits futuros, prefira usar **Git Bash** ou mensagens em inglês para evitar problemas de encoding.
 
