@@ -1,0 +1,23 @@
+
+# Instruções para criar os assets
+
+Os arquivos SVG foram criados como placeholder. Para criar os PNGs reais:
+
+## Opção 1: Usar um conversor online
+1. Acesse https://convertio.co/svg-png/ ou similar
+2. Converta cada arquivo SVG para PNG:
+   - icon.svg → icon.png (1024x1024)
+   - splash.svg → splash.png (2048x2048)
+   - adaptive-icon.svg → adaptive-icon.png (1024x1024)
+   - favicon.svg → favicon.png (32x32)
+
+## Opção 2: Usar ImageMagick (se instalado)
+convert icon.svg -resize 1024x1024 icon.png
+convert splash.svg -resize 2048x2048 splash.png
+convert adaptive-icon.svg -resize 1024x1024 adaptive-icon.png
+convert favicon.svg -resize 32x32 favicon.png
+
+## Opção 3: Usar o Expo Asset Generator
+npx expo-asset-generator
+
+Para produção, substitua por imagens reais com o logo da CCB.
