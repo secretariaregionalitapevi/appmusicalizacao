@@ -2,7 +2,7 @@
  * Tela de Login - Padrão Regional Itapevi
  * Baseado no design do SAC (Sistema Administrativo de Contagem)
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,20 @@ export const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { login } = useAuth();
+
+  // Definir título da página na web
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.title = 'CCB | Login';
+      
+      // Atualizar favicon
+      const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      link.href = '/src/img/ccb.png';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+  }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim() || !polo) {
