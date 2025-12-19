@@ -7,8 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "npx expo export --platform web",
-    "vercel-build": "npx expo export --platform web",
+    "build": "npx expo export --platform web && node scripts/post-build.js",
+    "vercel-build": "npx expo export --platform web && node scripts/post-build.js",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
