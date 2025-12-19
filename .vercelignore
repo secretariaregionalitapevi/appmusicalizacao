@@ -1,0 +1,10 @@
+# Arquivos que não devem ser enviados para o Vercel
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.env
+.env.local
+.env.production
+
