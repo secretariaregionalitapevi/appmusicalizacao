@@ -1,10 +1,11 @@
-# Configuração de encoding para arquivos de texto
-* text=auto eol=lf
-*.md text eol=lf
-*.txt text eol=lf
-*.json text eol=lf
-*.js text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
-*.jsx text eol=lf
+# Configuração de encoding UTF-8 para todos os arquivos de texto
+* text=auto eol=lf working-tree-encoding=UTF-8
+*.md text eol=lf working-tree-encoding=UTF-8
+*.txt text eol=lf working-tree-encoding=UTF-8
+*.json text eol=lf working-tree-encoding=UTF-8
+*.js text eol=lf working-tree-encoding=UTF-8
+*.ts text eol=lf working-tree-encoding=UTF-8
+*.tsx text eol=lf working-tree-encoding=UTF-8
+*.jsx text eol=lf working-tree-encoding=UTF-8
+*.sql text eol=lf working-tree-encoding=UTF-8
 
