@@ -20,7 +20,7 @@ const POLOS: SelectOption[] = [
   { label: 'Itapevi', value: 'itapevi' },
   { label: 'Jandira', value: 'jandira' },
   { label: 'Pirapora', value: 'pirapora' },
-  { label: 'Vargem Grande', value: 'vargem-grande' },
+  { label: 'Vargem Grande Paulista', value: 'vargem-grande-paulista' },
 ];
 
 export const LoginScreen: React.FC = () => {

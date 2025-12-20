@@ -66,3 +66,8 @@ coverage/
 *.log
 *.pem
 
+# Local config files
+.gitconfig.local
+APPNEW/
+VERIFICAR_VERCEL.md
+
