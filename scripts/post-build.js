@@ -32,3 +32,4 @@ html = html.replace(
 fs.writeFileSync(indexPath, html, 'utf8');
 console.log('✅ index.html corrigido com sucesso!');
 
+
