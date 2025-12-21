@@ -21,6 +21,7 @@ export interface SelectProps {
   helperText?: string;
   required?: boolean;
   containerStyle?: ViewStyle;
+  compact?: boolean; // Para campos compactos
   testID?: string;
 }
 
@@ -35,6 +36,7 @@ export const Select: React.FC<SelectProps> = ({
   helperText,
   required = false,
   containerStyle,
+  compact = false,
   testID,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,7 +57,11 @@ export const Select: React.FC<SelectProps> = ({
         </Text>
       )}
       <TouchableOpacity
-        style={[styles.selectContainer, hasError && styles.selectContainerError]}
+        style={[
+          styles.selectContainer,
+          compact && styles.selectContainerCompact,
+          hasError && styles.selectContainerError
+        ]}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
@@ -136,6 +142,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.paper,
     minHeight: 44,
   },
+  selectContainerCompact: {
+    minHeight: 40,
+  },
   selectContainerError: {
     borderColor: colors.error.main,
   },
@@ -197,7 +206,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.divider,
   },
   selectedOption: {
-    backgroundColor: colors.primary.light + '20',
+    backgroundColor: '#E3F2FD',
   },
   optionText: {
     ...typography.body1,

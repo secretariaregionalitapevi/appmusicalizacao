@@ -35,9 +35,10 @@ export const DATE_FORMATS = {
 } as const;
 
 export const USER_ROLES = {
-  ADMIN: 'admin',
-  INSTRUCTOR: 'instructor',
-  COORDINATOR: 'coordinator',
+  ADMIN: 'administrador',
+  INSTRUCTOR: 'instrutor',
+  COORDINATOR: 'coordenador',
+  USER: 'usuario',
 } as const;
 
 export const CLASS_STATUS = {

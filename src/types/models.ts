@@ -3,6 +3,19 @@
  */
 import type { UserRole, Gender, ClassStatus, ReportType } from '@/api/types/database.types';
 
+export interface Polo {
+  id: string;
+  nome: string;
+  cidade: string;
+  regional: string;
+  endereco?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Profile {
   id: string;
   fullName: string;
@@ -10,6 +23,9 @@ export interface Profile {
   phone: string | null;
   photoUrl: string | null;
   regional: string | null;
+  poloId?: string | null;
+  cidade?: string | null;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   updatedAt: string;
 }
@@ -123,4 +139,11 @@ export interface AttendanceStats {
   absentClasses: number;
   attendanceRate: number;
 }
+
+export interface LocalEnsaio {
+  id: string;
+  nome: string;
+}
+
+export type ProfileStatus = 'pending' | 'approved' | 'rejected';
 

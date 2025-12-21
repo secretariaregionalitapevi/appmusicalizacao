@@ -13,7 +13,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = 'admin' | 'instructor' | 'coordinator';
+export type UserRole = 'administrador' | 'instrutor' | 'coordenador' | 'usuario';
 export type Gender = 'male' | 'female';
 export type ClassStatus = 'scheduled' | 'completed' | 'cancelled';
 export type ReportType = 'attendance' | 'administrative' | 'student_progress' | 'custom';
@@ -21,7 +21,7 @@ export type ReportType = 'attendance' | 'administrative' | 'student_progress' | 
 export interface Database {
   public: {
     Tables: {
-      profiles: {
+      musicalizacao_profiles: {
         Row: {
           id: string;
           full_name: string;
@@ -53,7 +53,7 @@ export interface Database {
           updated_at?: string;
         };
       };
-      students: {
+      musicalizacao_students: {
         Row: {
           id: string;
           full_name: string;
@@ -112,7 +112,7 @@ export interface Database {
           updated_at?: string;
         };
       };
-      instructors: {
+      musicalizacao_instructors: {
         Row: {
           id: string;
           profile_id: string | null;
@@ -147,7 +147,7 @@ export interface Database {
           updated_at?: string;
         };
       };
-      classes: {
+      musicalizacao_classes: {
         Row: {
           id: string;
           title: string;
@@ -197,7 +197,7 @@ export interface Database {
           updated_at?: string;
         };
       };
-      attendance: {
+      musicalizacao_attendance: {
         Row: {
           id: string;
           class_id: string;
@@ -226,7 +226,7 @@ export interface Database {
           recorded_at?: string;
         };
       };
-      instructor_attendance: {
+      musicalizacao_instructor_attendance: {
         Row: {
           id: string;
           class_id: string;
@@ -258,7 +258,7 @@ export interface Database {
           recorded_at?: string;
         };
       };
-      class_files: {
+      musicalizacao_class_files: {
         Row: {
           id: string;
           class_id: string;
@@ -290,7 +290,7 @@ export interface Database {
           uploaded_at?: string;
         };
       };
-      reports: {
+      musicalizacao_reports: {
         Row: {
           id: string;
           title: string;

@@ -4,21 +4,23 @@ Aplicativo multiplataforma (iOS, Android e Web) para gestão completa do program
 
 ## 📋 Sobre o Projeto
 
-Sistema desenvolvido para facilitar a administração musical da Regional Itapevi, permitindo o gerenciamento de alunos, instrutores, aulas, presenças e relatórios de forma centralizada e eficiente.
+Sistema desenvolvido para facilitar a administração musical da Regional Itapevi, permitindo o gerenciamento de alunos, instrutores, aulas, presenças, calendário e relatórios de forma centralizada e eficiente.
 
 ## 🚀 Tecnologias
 
-- **React Native** 0.73+ com **Expo SDK** 50+
-- **TypeScript** 5.0+ para tipagem estática
+- **React Native** 0.73 com **Expo SDK** 50
+- **TypeScript** 5.3+ para tipagem estática
 - **Supabase** (PostgreSQL + Storage + Auth)
 - **Zustand** 4.5+ para gerenciamento de estado
 - **React Navigation** 6.x para navegação
 - **React Hook Form** 7.x + **Zod** 3.x para formulários e validação
 - **React Native Paper** 5.x para componentes UI
+- **SweetAlert2** para notificações elegantes (Web)
+- **React Native Toast Message** para notificações (Mobile)
 
 ## 📋 Pré-requisitos
 
-- **Node.js** 18+ e npm/yarn
+- **Node.js** 18+ e npm
 - **Expo CLI** (`npm install -g expo-cli`)
 - Conta no **Supabase** (gratuita)
 - **iOS Simulator** (Mac) ou **Android Studio** (para testar em emulador)
@@ -60,7 +62,16 @@ APP_ENV=development
 ### 4. Configure o Supabase
 
 1. Crie um projeto no [Supabase](https://supabase.com)
-2. Execute as migrations SQL fornecidas em `supabase/migrations/001_initial_schema.sql`
+2. Execute as migrations SQL na ordem numérica:
+   - `001_initial_schema.sql` - Schema inicial
+   - `002_add_polos_system.sql` - Sistema de polos
+   - `003_fix_rls_recursion_and_user_role.sql` - Correções de RLS
+   - `004_fix_signup_completely.sql` - Correções de cadastro
+   - `005_fix_rls_insert_signup.sql` - Correções de inserção
+   - `006_add_role_enum.sql` - Enum de roles
+   - `007_convert_role_to_portuguese_enum.sql` - Roles em português
+   - `008_seed_test_data.sql` - Dados de teste (opcional)
+   - `009_fix_reports_rls_and_preserve_route.sql` - Correções de relatórios
 3. Configure as políticas RLS (Row Level Security) conforme necessário
 4. Crie os buckets de storage:
    - `class-files` (arquivos de aulas)
@@ -126,64 +137,93 @@ O Vercel fará deploy automático sempre que você fizer push para a branch `mai
 
 O banco de dados utiliza PostgreSQL através do Supabase. As principais tabelas são:
 
-- `profiles` - Perfis de usuários
-- `students` - Alunos cadastrados
-- `instructors` - Instrutores
-- `classes` - Aulas
-- `attendances` - Registros de presença
-- `class_files` - Arquivos relacionados às aulas
+- `musicalizacao_profiles` - Perfis de usuários
+- `musicalizacao_polos` - Polos da regional
+- `musicalizacao_students` - Alunos cadastrados
+- `musicalizacao_instructors` - Instrutores
+- `musicalizacao_classes` - Aulas
+- `musicalizacao_attendance` - Registros de presença
+- `musicalizacao_reports` - Relatórios gerados
 
-Veja o arquivo `supabase/migrations/001_initial_schema.sql` para o schema completo.
+Veja os arquivos em `supabase/migrations/` para o schema completo.
 
 ## 📁 Estrutura do Projeto
 
 ```
 src/
-├── api/              # Cliente Supabase e tipos
+├── api/                    # Cliente Supabase e tipos
 │   ├── supabase.ts
 │   └── types/
-├── components/       # Componentes reutilizáveis
-│   └── common/      # Componentes comuns (Button, Input, etc.)
-├── screens/         # Telas do aplicativo
-│   ├── auth/        # Telas de autenticação
-│   ├── home/        # Tela inicial
-│   ├── students/    # Gerenciamento de alunos
-│   ├── classes/     # Gerenciamento de aulas
-│   └── reports/     # Relatórios
-├── navigation/      # Configuração de navegação
-├── hooks/           # Custom hooks
-├── stores/          # Zustand stores (quando implementado)
-├── services/        # Lógica de negócio
-├── utils/           # Utilitários e helpers
-├── types/           # Tipos TypeScript
-└── theme/           # Sistema de design (cores, espaçamento, tipografia)
+├── components/             # Componentes reutilizáveis
+│   └── common/            # Componentes comuns
+│       ├── AdminLayout.tsx
+│       ├── DashboardCard.tsx
+│       ├── Button.tsx
+│       ├── Input.tsx
+│       ├── Select.tsx
+│       └── ...
+├── contexts/               # Contextos React
+│   └── ThemeContext.tsx   # Gerenciamento de tema (dark/light)
+├── screens/                # Telas do aplicativo
+│   ├── auth/              # Telas de autenticação
+│   ├── home/              # Dashboard principal
+│   ├── students/          # Gerenciamento de alunos
+│   ├── classes/           # Gerenciamento de aulas
+│   ├── calendar/         # Calendário de eventos
+│   ├── attendance/        # Registro de presença
+│   ├── reports/           # Relatórios
+│   └── profile/           # Perfil do usuário
+├── navigation/             # Configuração de navegação
+├── hooks/                  # Custom hooks
+│   └── useAuth.ts         # Hook de autenticação
+├── services/               # Serviços e lógica de negócio
+├── utils/                  # Utilitários e helpers
+│   ├── toast.ts           # Sistema de notificações
+│   ├── pdfExport.ts       # Exportação de PDF
+│   └── ...
+├── types/                  # Tipos TypeScript
+└── theme/                  # Sistema de design
+    ├── colors.ts
+    ├── spacing.ts
+    └── typography.ts
 ```
 
-## 🔐 Autenticação
+## 🔐 Autenticação e Roles
 
-O aplicativo suporta três níveis de acesso:
+O aplicativo suporta quatro níveis de acesso (em português):
 
-- **Admin**: Acesso completo ao sistema
-- **Coordinator**: Pode gerenciar alunos e aulas
-- **Instructor**: Pode registrar presença e visualizar dados
+- **Administrador**: Acesso completo ao sistema
+- **Coordenador**: Pode gerenciar alunos, aulas e relatórios
+- **Instrutor**: Pode registrar presença e visualizar dados
+- **Usuário**: Acesso básico de visualização
 
 ## 📝 Funcionalidades
 
 ### ✅ Implementadas
 
-- Autenticação de usuários com Supabase
-- Tela de login responsiva (mobile e web)
-- Navegação entre telas
-- Sistema de design consistente
+- ✅ Autenticação de usuários com Supabase
+- ✅ Sistema de cadastro com seleção de polo
+- ✅ Dashboard administrativo com métricas e gráficos
+- ✅ Gerenciamento de alunos (listagem, busca, filtros)
+- ✅ Gerenciamento de aulas (listagem, busca, filtros)
+- ✅ Calendário mensal e semanal com eventos coloridos
+- ✅ Registro de presença
+- ✅ Geração e visualização de relatórios (PDF e impressão)
+- ✅ Perfil do usuário com edição de dados
+- ✅ Sistema de temas (dark/light mode)
+- ✅ Layout responsivo (mobile e desktop)
+- ✅ Navegação preservada ao recarregar página (F5)
+- ✅ Sidebar responsiva com animações
+- ✅ Gráficos de frequência por gênero
+- ✅ Gráficos de aulas por status
+- ✅ Alertas de alunos com faltas consecutivas
 
 ### 🚧 Em Desenvolvimento
 
-- Gerenciamento de alunos
-- Gerenciamento de aulas
-- Registro de presença
-- Upload de arquivos
-- Geração de relatórios
-- Dashboard administrativo
+- Upload de arquivos para aulas
+- Notificações push
+- Exportação de dados em Excel
+- Filtros avançados no calendário
 
 ## 🧪 Testes
 
@@ -198,6 +238,7 @@ npm test
 - Verifique se as variáveis de ambiente estão corretas
 - Confirme que o projeto Supabase está ativo
 - Verifique as políticas RLS no Supabase
+- Execute as migrations na ordem correta
 
 ### Erro ao fazer build
 

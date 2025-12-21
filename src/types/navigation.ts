@@ -11,14 +11,17 @@ export type RootStackParamList = {
 
 export type AuthStackParamList = {
   Login: undefined;
+  SignUp: undefined;
   Register: undefined;
   ForgotPassword: undefined;
 };
 
 export type MainTabParamList = {
   Home: undefined;
+  Calendar: undefined;
   Classes: undefined;
   Students: undefined;
+  Attendance: undefined;
   Reports: undefined;
   Profile: undefined;
 };
