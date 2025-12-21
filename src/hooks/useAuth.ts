@@ -612,14 +612,19 @@ export const useAuth = (): UseAuthReturn => {
           
           // Verificar se o email precisa ser confirmado
           if (!authData.user.email_confirmed_at) {
-            console.warn('⚠️ Email não confirmado. Pode ser necessário confirmar email antes de criar perfil.');
-            // Tentar criar perfil mesmo assim - algumas configurações do Supabase permitem isso
-          } else {
-            // Se o email está confirmado mas não há sessão, há um problema
+            console.warn('⚠️ Email não confirmado. O perfil só pode ser criado após confirmar o email.');
+            // Fazer logout e informar que precisa confirmar email
             await supabase.auth.signOut();
             return { 
               user: null, 
-              error: new Error('Erro ao criar sessão. Verifique se o Supabase está configurado corretamente e se a confirmação de email está desabilitada ou confirme seu email antes de continuar.') 
+              error: new Error('Conta criada com sucesso! Um email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e clique no link para confirmar sua conta. Após a confirmação, faça login para completar o cadastro.') 
+            };
+          } else {
+            // Se o email está confirmado mas não há sessão, há um problema de configuração
+            await supabase.auth.signOut();
+            return { 
+              user: null, 
+              error: new Error('Erro ao criar sessão. Verifique se o Supabase está configurado corretamente ou entre em contato com o administrador.') 
             };
           }
         }
@@ -630,14 +635,18 @@ export const useAuth = (): UseAuthReturn => {
       console.log('📝 Tentando inserir perfil:', profileInsert);
       console.log('📝 Verificando: auth.uid() deve ser igual a id:', sessionCheck?.session?.user.id === authData.user.id);
       
-      // Se não há sessão, tentar usar o user ID diretamente
-      // Isso pode funcionar se as políticas RLS permitirem inserção sem sessão ativa
-      // ou se houver um trigger que cria o perfil automaticamente
+      // IMPORTANTE: Só tentar criar perfil se houver sessão ativa
+      // Sem sessão, as políticas RLS bloqueiam a inserção
       if (!sessionCheck?.session) {
-        console.warn('⚠️ Tentando criar perfil sem sessão ativa. Isso pode falhar se RLS estiver habilitado.');
-        console.warn('💡 Se falhar, o usuário precisará confirmar o email e fazer login primeiro.');
+        console.error('❌ Não é possível criar perfil sem sessão ativa devido às políticas RLS.');
+        await supabase.auth.signOut();
+        return { 
+          user: null, 
+          error: new Error('Conta criada com sucesso! Um email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e clique no link para confirmar sua conta. Após a confirmação, faça login para completar o cadastro.') 
+        };
       }
       
+      console.log('✅ Sessão confirmada. Criando perfil...');
       const { data: profileData, error: profileError } = await supabase
         .from('musicalizacao_profiles')
         .insert(profileInsert)
@@ -665,28 +674,12 @@ export const useAuth = (): UseAuthReturn => {
         const checkProfile = await getProfile(authData.user.id);
         if (checkProfile) {
           console.log('✅ Perfil foi criado (provavelmente por trigger). Mantendo logado.');
-          // Se há sessão, manter logado. Se não, fazer logout e pedir para confirmar email
-          if (sessionCheck?.session) {
-            setUser(authData.user);
-            setProfile(checkProfile);
-            return { user: authData.user, error: null };
-          } else {
-            // Sem sessão - fazer logout e informar que precisa confirmar email
-            await supabase.auth.signOut();
-            return { 
-              user: null, 
-              error: new Error('Conta criada com sucesso! Um email de confirmação foi enviado. Verifique sua caixa de entrada e clique no link para confirmar sua conta antes de fazer login.') 
-            };
-          }
-        }
-        
-        // Se não há sessão e o erro é de RLS, informar que precisa confirmar email
-        if (!sessionCheck?.session && (profileError.code === '42501' || profileError.message.includes('row-level security'))) {
+          // Como já garantimos que há sessão antes, podemos manter logado
+          setUser(authData.user);
+          setProfile(checkProfile);
+          // Fazer logout mesmo assim para evitar login automático
           await supabase.auth.signOut();
-          return { 
-            user: null, 
-            error: new Error('Conta criada! Por favor, confirme seu email (verifique sua caixa de entrada) e faça login para completar o cadastro.') 
-          };
+          return { user: null, error: null };
         }
         
         await supabase.auth.signOut();
@@ -719,20 +712,12 @@ export const useAuth = (): UseAuthReturn => {
         const checkProfile = await getProfile(authData.user.id);
         if (checkProfile) {
           console.log('✅ Perfil existe mesmo sem retorno.');
-          // Se há sessão, manter logado. Se não, fazer logout e informar
-          if (sessionCheck?.session) {
-            setUser(authData.user);
-            setProfile(checkProfile);
-            // Fazer logout mesmo assim para evitar login automático
-            await supabase.auth.signOut();
-            return { user: null, error: null };
-          } else {
-            await supabase.auth.signOut();
-            return { 
-              user: null, 
-              error: new Error('Conta criada! Por favor, confirme seu email (verifique sua caixa de entrada) e faça login para acessar o sistema.') 
-            };
-          }
+          // Como já garantimos que há sessão antes, podemos manter logado
+          setUser(authData.user);
+          setProfile(checkProfile);
+          // Fazer logout mesmo assim para evitar login automático
+          await supabase.auth.signOut();
+          return { user: null, error: null };
         }
         
         await supabase.auth.signOut();
