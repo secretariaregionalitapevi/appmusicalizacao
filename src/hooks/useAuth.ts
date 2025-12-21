@@ -49,7 +49,15 @@ export const useAuth = (): UseAuthReturn => {
           console.log('ℹ️ Perfil não encontrado (PGRST116)');
           return null;
         }
+        // Erro 406 (Not Acceptable) pode ser problema de RLS ou formato de resposta
+        // Não é crítico - apenas logar e retornar null
+        if (error.code === 'PGRST301' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+          console.warn('⚠️ Erro 406 ao buscar perfil (pode ser problema de RLS ou formato):', error.message);
+          return null;
+        }
         console.error('❌ Erro ao buscar perfil:', error);
+        console.error('❌ Código:', error.code);
+        console.error('❌ Mensagem:', error.message);
         return null;
       }
 
@@ -729,16 +737,18 @@ export const useAuth = (): UseAuthReturn => {
       
       console.log('✅ Perfil criado com sucesso:', profileData);
       
-      // Para novos usuários: fazer logout IMEDIATAMENTE após criar o perfil
-      // Isso evita que o AppNavigator detecte a sessão e mostre a página principal
-      console.log('📝 Conta criada com sucesso. Fazendo logout IMEDIATAMENTE para evitar login automático...');
+      // Para novos usuários: fazer logout após criar o perfil
+      // Aguardar um pouco para garantir que o perfil está totalmente criado
+      // e que o AppNavigator não vai fazer logout antes
+      console.log('📝 Conta criada com sucesso. Aguardando antes de fazer logout...');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar meio segundo
       
-      // IMPORTANTE: Fazer logout ANTES de qualquer outra coisa para evitar que
-      // o AppNavigator detecte a sessão e mostre a página principal
+      // IMPORTANTE: Fazer logout para evitar que o AppNavigator detecte a sessão
+      // e mostre a página principal antes do redirecionamento
       await supabase.auth.signOut();
       
       // Aguardar um pouco para garantir que o logout foi processado
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // NÃO setar user/profile aqui - isso faria o AppNavigator mostrar a página principal
       // Apenas retornar sucesso para o SignUpScreen exibir toast e redirecionar

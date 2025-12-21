@@ -21,18 +21,18 @@ export const AppNavigator: React.FC = () => {
     let subscription: { unsubscribe?: () => void } | null = null;
 
     // Função auxiliar para verificar perfil sem bloquear (com timeout)
-    const verifyProfileAndSetAuth = async (userId: string) => {
+    const verifyProfileAndSetAuth = async (userId: string, isSignup: boolean = false) => {
       try {
-        // Timeout de 3 segundos para evitar travamento
+        // Timeout de 5 segundos para dar mais tempo durante signup
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 3000)
+          setTimeout(() => reject(new Error('Timeout')), isSignup ? 5000 : 3000)
         );
 
         const profilePromise = supabase
           .from('musicalizacao_profiles')
           .select('id')
           .eq('id', userId)
-          .single();
+          .maybeSingle(); // Usar maybeSingle ao invés de single para não dar erro se não existir
 
         const { data: profileData, error: profileError } = await Promise.race([
           profilePromise,
@@ -41,18 +41,103 @@ export const AppNavigator: React.FC = () => {
 
         if (!isMounted) return;
 
-        if (profileError || !profileData) {
+        // Tratar erros específicos
+        if (profileError) {
+          // Erro 406 (Not Acceptable) pode ser problema de RLS ou formato
+          // Erro PGRST116 significa que não encontrou (não é crítico)
+          if (profileError.code === 'PGRST116') {
+            console.log('ℹ️ Perfil ainda não existe (PGRST116)');
+            if (isSignup) {
+              // Durante signup, aguardar mais um pouco antes de fazer logout
+              console.log('⏳ Aguardando criação do perfil durante signup...');
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Tentar novamente
+              const retryResult = await supabase
+                .from('musicalizacao_profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+              
+              if (retryResult.data) {
+                console.log('✅ Perfil encontrado após retry');
+                return; // Perfil existe, manter autenticado
+              }
+            }
+            // Se não é signup ou perfil ainda não existe após retry, fazer logout
+            console.warn('⚠️ Perfil não encontrado. Fazendo logout...');
+            await supabase.auth.signOut();
+            if (isMounted) {
+              setIsAuthenticated(false);
+            }
+            return;
+          }
+          
+          // Outros erros (406, etc) - durante signup, aguardar antes de fazer logout
+          if (isSignup) {
+            console.warn('⚠️ Erro ao buscar perfil durante signup:', profileError.code, profileError.message);
+            console.log('⏳ Aguardando criação do perfil...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Tentar novamente
+            const retryResult = await supabase
+              .from('musicalizacao_profiles')
+              .select('id')
+              .eq('id', userId)
+              .maybeSingle();
+            
+            if (retryResult.data && !retryResult.error) {
+              console.log('✅ Perfil encontrado após retry');
+              return; // Perfil existe, manter autenticado
+            }
+          }
+          
+          console.warn('⚠️ Erro ao buscar perfil:', profileError.code, profileError.message);
+          console.warn('⚠️ Fazendo logout...');
+          await supabase.auth.signOut();
+          if (isMounted) {
+            setIsAuthenticated(false);
+          }
+          return;
+        }
+
+        if (!profileData) {
+          if (isSignup) {
+            // Durante signup, aguardar antes de fazer logout
+            console.log('⏳ Perfil não encontrado durante signup. Aguardando...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Tentar novamente
+            const retryResult = await supabase
+              .from('musicalizacao_profiles')
+              .select('id')
+              .eq('id', userId)
+              .maybeSingle();
+            
+            if (retryResult.data) {
+              console.log('✅ Perfil encontrado após retry');
+              return; // Perfil existe, manter autenticado
+            }
+          }
           console.warn('⚠️ Perfil não encontrado. Fazendo logout...');
           await supabase.auth.signOut();
           if (isMounted) {
             setIsAuthenticated(false);
           }
+        } else {
+          console.log('✅ Perfil encontrado');
         }
       } catch (error: any) {
         console.error('Erro ao verificar perfil:', error);
         // Se for timeout, apenas logar sem fazer logout (pode ser problema de rede)
         if (error?.message?.includes('Timeout')) {
           console.warn('⚠️ Timeout ao verificar perfil. Mantendo sessão.');
+        } else if (isSignup) {
+          // Durante signup, não fazer logout imediatamente por erros inesperados
+          console.warn('⚠️ Erro inesperado durante signup. Aguardando...');
+        } else {
+          // Em outros casos, fazer logout
+          await supabase.auth.signOut();
+          if (isMounted) {
+            setIsAuthenticated(false);
+          }
         }
       }
     };
@@ -69,7 +154,8 @@ export const AppNavigator: React.FC = () => {
           setIsAuthenticated(false);
         } else {
           // Verificar perfil de forma assíncrona (não bloquear o carregamento)
-          verifyProfileAndSetAuth(session.user.id);
+          // Não passar flag de signup aqui pois é verificação inicial
+          verifyProfileAndSetAuth(session.user.id, false);
           setIsAuthenticated(true); // Permitir acesso inicialmente, validação será feita depois
         }
       } catch (error) {
@@ -105,25 +191,26 @@ export const AppNavigator: React.FC = () => {
         // Verificar perfil quando a sessão mudar
         // IMPORTANTE: Não reagir imediatamente a SIGNED_UP para evitar mostrar página principal
         if (event === 'SIGNED_UP') {
-          // Durante signup, aguardar um pouco antes de verificar
-          // Se o signup fizer logout, não vamos mostrar a página principal
+          // Durante signup, aguardar mais tempo antes de verificar
+          // O signup pode fazer logout, então não vamos mostrar a página principal
           setTimeout(async () => {
             if (!isMounted) return;
             const { data: currentSession } = await supabase.auth.getSession();
             if (currentSession?.session) {
-              // Se ainda há sessão, verificar perfil
-              verifyProfileAndSetAuth(currentSession.session.user.id);
+              // Se ainda há sessão, verificar perfil com flag de signup
+              // Isso dá mais tempo para o perfil ser criado
+              verifyProfileAndSetAuth(currentSession.session.user.id, true);
               setIsAuthenticated(true);
             } else {
               // Se não há sessão, o signup fez logout - não autenticar
               setIsAuthenticated(false);
             }
-          }, 500);
+          }, 1000); // Aumentar delay para dar mais tempo
           return;
         }
 
         // Para outros eventos (SIGNED_IN, TOKEN_REFRESHED), verificar normalmente
-        verifyProfileAndSetAuth(session.user.id);
+        verifyProfileAndSetAuth(session.user.id, false);
         setIsAuthenticated(true);
       });
       
