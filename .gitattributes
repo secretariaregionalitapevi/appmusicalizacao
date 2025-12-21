@@ -1,11 +1,39 @@
 # Configuração de encoding UTF-8 para todos os arquivos de texto
-* text=auto eol=lf working-tree-encoding=UTF-8
-*.md text eol=lf working-tree-encoding=UTF-8
-*.txt text eol=lf working-tree-encoding=UTF-8
-*.json text eol=lf working-tree-encoding=UTF-8
-*.js text eol=lf working-tree-encoding=UTF-8
-*.ts text eol=lf working-tree-encoding=UTF-8
-*.tsx text eol=lf working-tree-encoding=UTF-8
-*.jsx text eol=lf working-tree-encoding=UTF-8
-*.sql text eol=lf working-tree-encoding=UTF-8
+# Garante que todos os arquivos sejam tratados como UTF-8
+* text=auto eol=lf
+
+# Arquivos de código
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+
+# Arquivos de documentação
+*.md text eol=lf
+*.txt text eol=lf
+*.mdx text eol=lf
+
+# Arquivos SQL
+*.sql text eol=lf
+
+# Arquivos de configuração
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.conf text eol=lf
+
+# Arquivos binários (não devem ser convertidos)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
 
