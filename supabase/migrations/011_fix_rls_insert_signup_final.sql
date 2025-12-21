@@ -21,25 +21,7 @@ CREATE POLICY "musicalizacao_allow_insert_own_profile"
 -- 3. GARANTIR QUE RLS ESTÁ HABILITADO
 ALTER TABLE musicalizacao_profiles ENABLE ROW LEVEL SECURITY;
 
--- 4. VERIFICAR SE A CONSTRAINT DE ROLE PERMITE 'usuario'
--- Se não permitir, adicionar
-DO $$
-BEGIN
-  -- Verificar se a constraint existe e permite 'usuario'
-  IF NOT EXISTS (
-    SELECT 1 
-    FROM information_schema.check_constraints 
-    WHERE constraint_name = 'musicalizacao_profiles_role_check'
-    AND check_clause LIKE '%usuario%'
-  ) THEN
-    -- Remover constraint antiga
-    ALTER TABLE musicalizacao_profiles
-      DROP CONSTRAINT IF EXISTS musicalizacao_profiles_role_check;
-    
-    -- Criar nova constraint que permite 'usuario'
-    ALTER TABLE musicalizacao_profiles
-      ADD CONSTRAINT musicalizacao_profiles_role_check 
-      CHECK (role IN ('admin', 'instructor', 'coordinator', 'usuario', 'administrador', 'instrutor', 'coordenador'));
-  END IF;
-END $$;
+-- NOTA: A coluna role é um ENUM (musicalizacao_user_role) que já valida os valores
+-- Não é necessário criar constraint CHECK - o ENUM já faz isso
+-- Valores válidos do ENUM: 'administrador', 'instrutor', 'coordenador', 'usuario'
 
