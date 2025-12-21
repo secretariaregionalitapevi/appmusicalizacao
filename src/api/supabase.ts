@@ -4,25 +4,30 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // Valores padrão para desenvolvimento (substitua pelas suas credenciais reais)
-// Tentar múltiplas fontes: Constants.expoConfig.extra (app.config.js) > process.env > window._env_ (Vercel) > placeholder
+// Tentar múltiplas fontes: window.__ENV__ (runtime web - Vercel) > Constants.expoConfig.extra > process.env > placeholder
 const getEnvVar = (key: string, defaultValue: string = ''): string => {
-  // 1. Tentar Constants.expoConfig.extra (build time)
-  const fromExpoConfig = Constants.expoConfig?.extra?.[key] || Constants.expoConfig?.extra?.[key.toLowerCase()];
-  if (fromExpoConfig) return fromExpoConfig;
+  // 1. PRIMEIRO: Tentar window.__ENV__ ou window._env_ (runtime web - Vercel)
+  // Isso é crítico porque no Vercel, as variáveis são injetadas no HTML durante o build
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const windowEnv = (window as any).__ENV__ || (window as any)._env_;
+    if (windowEnv?.[key] && windowEnv[key] !== '') {
+      return windowEnv[key];
+    }
+  }
   
-  // 2. Tentar process.env (build time e runtime)
-  if (typeof process !== 'undefined' && process.env?.[key]) {
+  // 2. Tentar Constants.expoConfig.extra (build time - funciona em dev)
+  const fromExpoConfig = Constants.expoConfig?.extra?.[key] || Constants.expoConfig?.extra?.[key.toLowerCase()];
+  if (fromExpoConfig && fromExpoConfig !== '') {
+    return fromExpoConfig;
+  }
+  
+  // 3. Tentar process.env (build time - não funciona no runtime web)
+  if (typeof process !== 'undefined' && process.env?.[key] && process.env[key] !== '') {
     return process.env[key];
   }
   
-  // 3. Tentar window._env_ (runtime web - Vercel)
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const windowEnv = (window as any)._env_ || (window as any).__ENV__;
-    if (windowEnv?.[key]) return windowEnv[key];
-  }
-  
   // 4. Tentar NEXT_PUBLIC_ prefix (compatibilidade)
-  if (typeof process !== 'undefined' && process.env?.[`NEXT_PUBLIC_${key}`]) {
+  if (typeof process !== 'undefined' && process.env?.[`NEXT_PUBLIC_${key}`] && process.env[`NEXT_PUBLIC_${key}`] !== '') {
     return process.env[`NEXT_PUBLIC_${key}`];
   }
   
@@ -32,22 +37,26 @@ const getEnvVar = (key: string, defaultValue: string = ''): string => {
 const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://placeholder.supabase.co');
 const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'placeholder-key');
 
-// Log para debug (apenas em desenvolvimento)
-if (__DEV__) {
-  console.log('🔧 Supabase Config Debug:', {
-    hasExpoConfigUrl: !!Constants.expoConfig?.extra?.supabaseUrl,
-    hasExpoConfigKey: !!Constants.expoConfig?.extra?.supabaseAnonKey,
-    hasExpoConfigUrlUpper: !!Constants.expoConfig?.extra?.SUPABASE_URL,
-    hasExpoConfigKeyUpper: !!Constants.expoConfig?.extra?.SUPABASE_ANON_KEY,
-    hasProcessEnvUrl: !!(typeof process !== 'undefined' && process.env?.SUPABASE_URL),
-    hasProcessEnvKey: !!(typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY),
-    urlLength: supabaseUrl.length,
-    keyLength: supabaseAnonKey.length,
-    urlPreview: supabaseUrl.substring(0, 40) + '...',
-    isConfigured: !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder'),
-    allExtraKeys: Constants.expoConfig?.extra ? Object.keys(Constants.expoConfig.extra) : [],
-  });
-}
+// Log para debug (sempre logar em produção também para debug no Vercel)
+const debugInfo = {
+  hasWindowEnv: Platform.OS === 'web' && typeof window !== 'undefined' && !!(window as any).__ENV__,
+  hasExpoConfigUrl: !!Constants.expoConfig?.extra?.supabaseUrl,
+  hasExpoConfigKey: !!Constants.expoConfig?.extra?.supabaseAnonKey,
+  hasExpoConfigUrlUpper: !!Constants.expoConfig?.extra?.SUPABASE_URL,
+  hasExpoConfigKeyUpper: !!Constants.expoConfig?.extra?.SUPABASE_ANON_KEY,
+  hasProcessEnvUrl: !!(typeof process !== 'undefined' && process.env?.SUPABASE_URL),
+  hasProcessEnvKey: !!(typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY),
+  urlLength: supabaseUrl.length,
+  keyLength: supabaseAnonKey.length,
+  urlPreview: supabaseUrl.substring(0, 40) + '...',
+  isConfigured: !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder'),
+  allExtraKeys: Constants.expoConfig?.extra ? Object.keys(Constants.expoConfig.extra) : [],
+  windowEnvKeys: Platform.OS === 'web' && typeof window !== 'undefined' && (window as any).__ENV__ 
+    ? Object.keys((window as any).__ENV__) 
+    : [],
+};
+
+console.log('🔧 Supabase Config Debug:', debugInfo);
 
 // Aviso em desenvolvimento se não houver credenciais
 const hasConfig = 
