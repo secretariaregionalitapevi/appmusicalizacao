@@ -4,18 +4,33 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // Valores padrão para desenvolvimento (substitua pelas suas credenciais reais)
-// Tentar múltiplas fontes: Constants.expoConfig.extra (app.config.js) > process.env > placeholder
-const supabaseUrl = 
-  Constants.expoConfig?.extra?.supabaseUrl || 
-  Constants.expoConfig?.extra?.SUPABASE_URL ||
-  (typeof process !== 'undefined' && process.env?.SUPABASE_URL) || 
-  'https://placeholder.supabase.co';
+// Tentar múltiplas fontes: Constants.expoConfig.extra (app.config.js) > process.env > window._env_ (Vercel) > placeholder
+const getEnvVar = (key: string, defaultValue: string = ''): string => {
+  // 1. Tentar Constants.expoConfig.extra (build time)
+  const fromExpoConfig = Constants.expoConfig?.extra?.[key] || Constants.expoConfig?.extra?.[key.toLowerCase()];
+  if (fromExpoConfig) return fromExpoConfig;
   
-const supabaseAnonKey = 
-  Constants.expoConfig?.extra?.supabaseAnonKey || 
-  Constants.expoConfig?.extra?.SUPABASE_ANON_KEY ||
-  (typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY) || 
-  'placeholder-key';
+  // 2. Tentar process.env (build time e runtime)
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  
+  // 3. Tentar window._env_ (runtime web - Vercel)
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const windowEnv = (window as any)._env_ || (window as any).__ENV__;
+    if (windowEnv?.[key]) return windowEnv[key];
+  }
+  
+  // 4. Tentar NEXT_PUBLIC_ prefix (compatibilidade)
+  if (typeof process !== 'undefined' && process.env?.[`NEXT_PUBLIC_${key}`]) {
+    return process.env[`NEXT_PUBLIC_${key}`];
+  }
+  
+  return defaultValue;
+};
+
+const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://placeholder.supabase.co');
+const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'placeholder-key');
 
 // Log para debug (apenas em desenvolvimento)
 if (__DEV__) {

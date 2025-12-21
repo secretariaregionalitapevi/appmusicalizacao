@@ -23,6 +23,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { showToast } from '@/utils/toast';
 import { colors, spacing, typography } from '@/theme';
+import { isSupabaseConfigured } from '@/api/supabase';
 
 type RootStackParamList = {
   Login: undefined;
@@ -56,6 +57,15 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
+    // Verificar se Supabase está configurado
+    if (!isSupabaseConfigured()) {
+      showToast.error(
+        'Erro de configuração',
+        'As credenciais do Supabase não estão configuradas. Verifique as variáveis de ambiente no Vercel.'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('Tentando fazer login...');
@@ -66,7 +76,23 @@ export const LoginScreen: React.FC = () => {
       (navigation as any).navigate('Home');
     } catch (error) {
       console.error('Erro no login:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      
+      // Tratar diferentes tipos de erro
+      let errorMessage = 'Ocorreu um erro inesperado';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Mensagens mais amigáveis para erros comuns
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e as configurações do Supabase.';
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'E-mail ou senha incorretos.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Por favor, confirme seu e-mail antes de fazer login.';
+        }
+      }
+      
       showToast.error('Erro no login', errorMessage);
     } finally {
       setLoading(false);

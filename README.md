@@ -114,10 +114,17 @@ Escaneie o QR code exibido no terminal com o app **Expo Go** no seu dispositivo 
 1. Acesse [Vercel](https://vercel.com) e faça login
 2. Clique em **Add New Project**
 3. Importe o repositório do GitHub
-4. Configure as seguintes variáveis de ambiente no Vercel:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
+4. **⚠️ IMPORTANTE:** Configure as seguintes variáveis de ambiente no Vercel:
+   - `SUPABASE_URL` - URL do seu projeto Supabase (ex: `https://seu-projeto.supabase.co`)
+   - `SUPABASE_ANON_KEY` - Chave anônima do Supabase (encontre em Settings → API)
    - `APP_ENV=production`
+
+   **Como obter as credenciais:**
+   - Acesse [supabase.com](https://supabase.com) → Seu Projeto → Settings → API
+   - Copie o **Project URL** para `SUPABASE_URL`
+   - Copie a chave **anon public** para `SUPABASE_ANON_KEY`
+
+   **⚠️ Sem essas variáveis, o aplicativo não funcionará online!**
 
 ### Configurações de Build
 
