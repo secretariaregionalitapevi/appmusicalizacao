@@ -338,7 +338,7 @@ export const SignUpScreen: React.FC = () => {
                 console.log('📍 Polo selecionado:', value);
                 setPoloSelecionado(value);
               }}
-              placeholder="Escolha o polo"
+              placeholder="Escolha o Polo"
               required
             />
 
