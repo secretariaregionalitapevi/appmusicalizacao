@@ -318,42 +318,14 @@ export const useAuth = (): UseAuthReturn => {
             password: password,
           });
           
-          if (loginError || !loginData?.user) {
+          if (loginError || !loginData?.user || !loginData?.session) {
             return { 
               user: null, 
               error: new Error('Este email já está cadastrado, mas a senha está incorreta. Tente fazer login.') 
             };
           }
           
-          // Verificar se a sessão está ativa - com múltiplas tentativas
-          let sessionCheck = await supabase.auth.getSession();
-          if (!sessionCheck.data?.session) {
-            console.warn('⚠️ Sessão não está ativa imediatamente após login. Aguardando...');
-            // Tentar aguardar e verificar novamente
-            for (let attempt = 1; attempt <= 3; attempt++) {
-              const waitTime = attempt * 500; // 500ms, 1s, 1.5s
-              console.log(`⏳ Tentativa ${attempt}/3: Aguardando ${waitTime}ms...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              
-              sessionCheck = await supabase.auth.getSession();
-              if (sessionCheck.data?.session) {
-                console.log(`✅ Sessão encontrada na tentativa ${attempt}`);
-                break;
-              }
-            }
-            
-            if (!sessionCheck.data?.session) {
-              console.error('❌ Sessão não está ativa após múltiplas tentativas');
-              return { 
-                user: null, 
-                error: new Error('Erro ao criar sessão. Verifique se o Supabase está configurado corretamente ou tente fazer login novamente.') 
-              };
-            }
-          }
-          
-          console.log('✅ Sessão ativa. User ID:', loginData.user.id);
-          console.log('✅ auth.uid() deve ser:', loginData.user.id);
-          
+          console.log('✅ Login realizado. User ID:', loginData.user.id);
           const userId = loginData.user.id;
           
           // Verificar se já tem perfil
@@ -383,36 +355,8 @@ export const useAuth = (): UseAuthReturn => {
             profileInsert.polo_id = poloId;
           }
           
-          // Verificar sessão ANTES de criar o perfil (NÃO fazer logout se não estiver ativa - tentar reativar)
-          let sessionBeforeInsert = await supabase.auth.getSession();
-          if (!sessionBeforeInsert.data?.session) {
-            console.warn('⚠️ Sessão não está ativa. Tentando reativar...');
-            // Tentar fazer login novamente para reativar a sessão
-            const { data: reloginData, error: reloginError } = await supabase.auth.signInWithPassword({
-              email: email.trim(),
-              password: password,
-            });
-            
-            if (reloginError || !reloginData?.session) {
-              return { 
-                user: null, 
-                error: new Error('Não foi possível manter a sessão ativa. Tente fazer login.') 
-              };
-            }
-            console.log('✅ Sessão reativada');
-            sessionBeforeInsert = await supabase.auth.getSession();
-          }
-          
-          if (!sessionBeforeInsert.data?.session) {
-            return { 
-              user: null, 
-              error: new Error('Sessão não está ativa. Tente fazer login.') 
-            };
-          }
-          
-          console.log('✅ Sessão ativa. auth.uid() =', sessionBeforeInsert.data.session.user.id);
-          console.log('📝 Tentando inserir perfil:', profileInsert);
-          console.log('📝 Verificando: auth.uid() deve ser igual a id:', sessionBeforeInsert.data.session.user.id === userId);
+          // Usar a sessão do login diretamente
+          console.log('📝 Criando perfil para usuário existente:', profileInsert);
           
           const { data: profileData, error: profileError } = await supabase
             .from('musicalizacao_profiles')
