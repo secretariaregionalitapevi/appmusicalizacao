@@ -191,8 +191,9 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.background.paper,
     borderRadius: 8,
-    width: '80%',
-    maxHeight: '60%',
+    width: '60%',
+    maxWidth: 400,
+    maxHeight: '50%',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -200,8 +201,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   option: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
