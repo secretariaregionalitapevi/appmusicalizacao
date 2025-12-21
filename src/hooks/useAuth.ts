@@ -332,12 +332,35 @@ export const useAuth = (): UseAuthReturn => {
             profileInsert.polo_id = poloId;
           }
           
+          // Verificar sessão antes de inserir
+          const { data: sessionCheck } = await supabase.auth.getSession();
+          console.log('🔍 Sessão antes de inserir perfil:', {
+            hasSession: !!sessionCheck?.session,
+            userId: sessionCheck?.session?.user?.id,
+            profileId: loginData.user.id,
+            match: sessionCheck?.session?.user?.id === loginData.user.id
+          });
+          
           const { error: profileError } = await supabase
             .from('musicalizacao_profiles')
             .insert(profileInsert);
           
           if (profileError) {
+            console.error('❌ Erro RLS:', {
+              code: profileError.code,
+              message: profileError.message,
+              hasSession: !!sessionCheck?.session,
+              userId: sessionCheck?.session?.user?.id
+            });
             await supabase.auth.signOut();
+            
+            if (profileError.code === '42501') {
+              return { 
+                user: null, 
+                error: new Error('Erro de permissão RLS. Execute a migration 011_fix_rls_insert_signup_final.sql no Supabase.') 
+              };
+            }
+            
             return { user: null, error: new Error(`Erro ao criar perfil: ${profileError.message}`) };
           }
           
@@ -375,12 +398,35 @@ export const useAuth = (): UseAuthReturn => {
         profileInsert.polo_id = poloId;
       }
       
+      // Verificar sessão antes de inserir
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      console.log('🔍 Sessão antes de inserir perfil:', {
+        hasSession: !!sessionCheck?.session,
+        userId: sessionCheck?.session?.user?.id,
+        profileId: authData.user.id,
+        match: sessionCheck?.session?.user?.id === authData.user.id
+      });
+      
       const { error: profileError } = await supabase
         .from('musicalizacao_profiles')
         .insert(profileInsert);
 
       if (profileError) {
+        console.error('❌ Erro RLS:', {
+          code: profileError.code,
+          message: profileError.message,
+          hasSession: !!sessionCheck?.session,
+          userId: sessionCheck?.session?.user?.id
+        });
         await supabase.auth.signOut();
+        
+        if (profileError.code === '42501') {
+          return { 
+            user: null, 
+            error: new Error('Erro de permissão RLS. Execute a migration 011_fix_rls_insert_signup_final.sql no Supabase.') 
+          };
+        }
+        
         return { user: null, error: new Error(`Erro ao criar perfil: ${profileError.message}`) };
       }
       
