@@ -967,23 +967,6 @@ export const HomeScreen: React.FC = () => {
                     </Text>
                   </View>
                 </View>
-                <View style={styles.analyticsItem}>
-                  <Text style={styles.analyticsValue}>{stats.totalClasses}</Text>
-                  <Text style={styles.analyticsLabel}>Total de Aulas</Text>
-                  <View style={styles.analyticsBarContainer}>
-                    <View style={styles.analyticsBar}>
-                      <View 
-                        style={[
-                          styles.analyticsBarFill, 
-                          { 
-                            width: '100%',
-                            backgroundColor: '#033D60'
-                          }
-                        ]} 
-                      />
-                    </View>
-                  </View>
-                </View>
               </View>
             </View>
 
@@ -1670,11 +1653,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   analyticsBarText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    minWidth: 40,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    minWidth: 45,
     textAlign: 'right',
+    marginLeft: spacing.xs,
   },
   analyticsChange: {
     fontSize: 12,
