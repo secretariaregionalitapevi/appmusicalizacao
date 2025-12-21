@@ -295,215 +295,72 @@ export const useAuth = (): UseAuthReturn => {
         };
       }
 
-      console.log('📝 Criando usuário no Supabase Auth...');
-      
-      // Criar usuário no Supabase Auth (SEM metadata para evitar problemas)
+      console.log('📝 Criando usuário...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
       });
 
       if (authError) {
-        console.error('❌ Erro ao criar usuário no Supabase Auth:', authError);
-        console.error('❌ Código:', authError.status);
-        console.error('❌ Mensagem:', authError.message);
-        
-        // Se o erro for "email já cadastrado", verificar se tem perfil e criar se necessário
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered') || authError.status === 422) {
-          console.log('📝 Email já existe em auth.users. Verificando perfil em musicalizacao_profiles...');
-          
-          // Fazer login para obter o user ID e sessão
+        // Se email já existe, fazer login e criar perfil
+        if (authError.message.includes('already registered') || authError.status === 422) {
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password,
           });
           
           if (loginError || !loginData?.user || !loginData?.session) {
-            return { 
-              user: null, 
-              error: new Error('Este email já está cadastrado, mas a senha está incorreta. Tente fazer login.') 
-            };
+            return { user: null, error: new Error('Email já cadastrado. Senha incorreta.') };
           }
-          
-          console.log('✅ Login realizado. User ID:', loginData.user.id);
-          const userId = loginData.user.id;
           
           // Verificar se já tem perfil
-          const existingProfile = await getProfile(userId);
-          
+          const existingProfile = await getProfile(loginData.user.id);
           if (existingProfile) {
-            // Já tem perfil - manter logado e retornar sucesso
-            setUser(loginData.user);
-            setProfile(existingProfile);
-            return { user: loginData.user, error: null };
+            await supabase.auth.signOut();
+            return { user: null, error: null };
           }
           
-          // Não tem perfil - criar agora
-          console.log('📝 Criando perfil em musicalizacao_profiles para usuário existente...');
-          
-          // Criar perfil - MÍNIMO NECESSÁRIO (sem buscar cidade do polo para evitar erros)
+          // Criar perfil
           const profileInsert: any = {
-            id: userId,
+            id: loginData.user.id,
             full_name: fullName.trim(),
             role: 'usuario',
             status: 'approved',
           };
           
-          // Adicionar campos opcionais apenas se fornecidos E válidos
-          // Validar se poloId é UUID válido (não aceitar strings numéricas como "1")
           if (poloId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
             profileInsert.polo_id = poloId;
           }
           
-          // Usar a sessão do login diretamente
-          console.log('📝 Criando perfil para usuário existente:', profileInsert);
-          
-          const { data: profileData, error: profileError } = await supabase
+          const { error: profileError } = await supabase
             .from('musicalizacao_profiles')
-            .insert(profileInsert)
-            .select()
-            .single();
-          
-          console.log('📦 Resultado da inserção:', { 
-            hasData: !!profileData, 
-            hasError: !!profileError,
-            errorCode: profileError?.code,
-            errorMessage: profileError?.message,
-            data: profileData 
-          });
+            .insert(profileInsert);
           
           if (profileError) {
-            console.error('❌ Erro ao criar perfil:', profileError);
-            console.error('❌ Código:', profileError.code);
-            console.error('❌ Mensagem:', profileError.message);
-            console.error('❌ Detalhes:', profileError.details);
-            console.error('❌ Hint:', profileError.hint);
-            
-            // Não fazer logout imediatamente - tentar verificar se o perfil foi criado mesmo com erro
-            const checkProfile = await getProfile(userId);
-            if (checkProfile) {
-              console.log('✅ Perfil foi criado apesar do erro. Mantendo logado.');
-              setUser(loginData.user);
-              setProfile(checkProfile);
-              return { user: loginData.user, error: null };
-            }
-            
-            // NÃO fazer logout - manter sessão para tentar novamente
-            if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
-              return { 
-                user: null, 
-                error: new Error('Erro de permissão RLS. Execute a migration 005 no Supabase.') 
-              };
-            }
-            
-            return { 
-              user: null, 
-              error: new Error(`Erro ao criar perfil: ${profileError.message}`) 
-            };
+            await supabase.auth.signOut();
+            return { user: null, error: new Error(`Erro ao criar perfil: ${profileError.message}`) };
           }
           
-          if (!profileData) {
-            console.warn('⚠️ Nenhum dado retornado da inserção. Verificando se o perfil existe...');
-            await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar um pouco
-            const checkProfile = await getProfile(userId);
-            if (checkProfile) {
-              console.log('✅ Perfil existe mesmo sem retorno. Mantendo logado.');
-              setUser(loginData.user);
-              setProfile(checkProfile);
-              return { user: loginData.user, error: null };
-            }
-            
-            // NÃO fazer logout - manter sessão para tentar novamente
-            return { 
-              user: null, 
-              error: new Error('Perfil não foi criado. Tente novamente ou entre em contato com o administrador.') 
-            };
-          }
-          
-          console.log('✅ Perfil criado com sucesso:', profileData);
-          
-          // Buscar perfil criado para garantir
-          await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar um pouco
-          const userProfile = await getProfile(userId);
-          
-          if (!userProfile) {
-            console.warn('⚠️ Perfil criado mas não foi possível carregá-lo. Usando dados retornados.');
-            // Usar os dados retornados diretamente
-            const mappedProfile = {
-              id: profileData.id,
-              fullName: profileData.full_name,
-              role: profileData.role,
-              phone: profileData.phone,
-              photoUrl: profileData.photo_url,
-              regional: profileData.regional,
-              poloId: profileData.polo_id,
-              cidade: profileData.cidade,
-              status: profileData.status,
-              createdAt: profileData.created_at,
-              updatedAt: profileData.updated_at,
-            };
-            setUser(loginData.user);
-            setProfile(mappedProfile);
-            return { user: loginData.user, error: null };
-          }
-          
-          // Sucesso - manter logado
-          setUser(loginData.user);
-          setProfile(userProfile);
-          return { user: loginData.user, error: null };
+          await supabase.auth.signOut();
+          return { user: null, error: null };
         }
         
-        // Outros erros
-        let errorMessage = authError.message;
-        if (authError.message.includes('fetch')) {
-          errorMessage = 'Erro de conexão. Verifique se o Supabase está configurado corretamente e se há conexão com a internet.';
-        }
-        return { user: null, error: new Error(errorMessage) };
+        return { user: null, error: new Error(authError.message) };
       }
 
-      // Verificar se o usuário foi criado
       if (!authData.user) {
-        console.error('❌ Usuário não foi criado');
-        // Se não há sessão mas também não há erro, pode ser que precise confirmar email
-        if (!authData.session) {
-          return { 
-            user: null, 
-            error: new Error('Um email de confirmação foi enviado. Verifique sua caixa de entrada e clique no link para confirmar sua conta antes de fazer login.') 
-          };
-        }
-        return { user: null, error: new Error('Erro ao criar usuário. Tente novamente.') };
-      }
-
-      console.log('✅ Usuário criado:', authData.user.id);
-      console.log('📧 Sessão disponível:', !!authData.session);
-
-      // SIMPLIFICADO: Se não há sessão, significa que precisa confirmar email
-      // Não tentar criar perfil sem sessão - as políticas RLS bloqueiam
-      if (!authData.session) {
-        console.log('ℹ️ Sessão não retornada - confirmação de email necessária');
-        // Não fazer logout aqui - o usuário foi criado, apenas precisa confirmar email
         return { 
           user: null, 
-          error: new Error('Conta criada com sucesso! Um email de confirmação foi enviado. Verifique sua caixa de entrada e clique no link para confirmar sua conta. Após a confirmação, faça login para acessar o sistema.') 
+          error: new Error('Confirme seu email antes de continuar.') 
         };
       }
 
-      // Se chegou aqui, há sessão - criar perfil normalmente
-      console.log('✅ Sessão ativa. Criando perfil...');
-
-      // Buscar cidade do polo
-      let cidade = null;
-      if (poloId) {
-        try {
-          const { data: poloData } = await supabase
-            .from('musicalizacao_polos')
-            .select('cidade')
-            .eq('id', poloId)
-            .maybeSingle();
-          cidade = poloData?.cidade || null;
-        } catch (poloError) {
-          console.warn('⚠️ Erro ao buscar cidade do polo (não crítico):', poloError);
-        }
+      // Se não há sessão, precisa confirmar email
+      if (!authData.session) {
+        return { 
+          user: null, 
+          error: new Error('Confirme seu email antes de continuar.') 
+        };
       }
 
       // Criar perfil
@@ -517,74 +374,17 @@ export const useAuth = (): UseAuthReturn => {
       if (poloId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
         profileInsert.polo_id = poloId;
       }
-      if (cidade) {
-        profileInsert.cidade = cidade;
-      }
       
-      console.log('📝 Inserindo perfil:', profileInsert);
-      const { data: profileData, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('musicalizacao_profiles')
-        .insert(profileInsert)
-        .select()
-        .single();
-
-      console.log('📦 Resultado da inserção:', { 
-        hasData: !!profileData, 
-        hasError: !!profileError,
-        errorCode: profileError?.code,
-        errorMessage: profileError?.message,
-        data: profileData 
-      });
+        .insert(profileInsert);
 
       if (profileError) {
-        console.error('❌ Erro ao criar perfil:', profileError);
-        
-        // Verificar se o perfil foi criado mesmo com erro (pode ter sido criado por trigger)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const checkProfile = await getProfile(authData.user.id);
-        if (checkProfile) {
-          console.log('✅ Perfil foi criado (provavelmente por trigger)');
-          await supabase.auth.signOut();
-          return { user: null, error: null };
-        }
-        
         await supabase.auth.signOut();
-        
-        if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
-          return { 
-            user: null, 
-            error: new Error('Erro de permissão. Entre em contato com o administrador.') 
-          };
-        }
-        
-        return { 
-          user: null, 
-          error: new Error(`Erro ao criar perfil: ${profileError.message}`) 
-        };
+        return { user: null, error: new Error(`Erro ao criar perfil: ${profileError.message}`) };
       }
       
-      if (!profileData) {
-        // Verificar se o perfil existe
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const checkProfile = await getProfile(authData.user.id);
-        if (checkProfile) {
-          console.log('✅ Perfil existe');
-          await supabase.auth.signOut();
-          return { user: null, error: null };
-        }
-        
-        await supabase.auth.signOut();
-        return { 
-          user: null, 
-          error: new Error('Perfil não foi criado. Tente novamente.') 
-        };
-      }
-      
-      console.log('✅ Perfil criado com sucesso');
-      
-      // Fazer logout para evitar login automático
       await supabase.auth.signOut();
-      
       return { user: null, error: null };
     } catch (error) {
       console.error('❌ Erro geral no signUp:', error);
