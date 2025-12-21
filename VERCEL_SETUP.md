@@ -2,9 +2,14 @@
 
 Este guia explica como configurar corretamente as variáveis de ambiente no Vercel para que o aplicativo funcione online.
 
-## ⚠️ Problema Comum: "Failed to fetch"
+## ⚠️ Problema Comum: "Failed to fetch" ou "placeholder.supabase.co"
 
-Se você está vendo o erro "Failed to fetch" ao tentar fazer login, significa que as variáveis de ambiente do Supabase não estão configuradas corretamente no Vercel.
+Se você está vendo o erro "Failed to fetch" ou tentando conectar em `placeholder.supabase.co`, significa que as variáveis de ambiente do Supabase não estão configuradas corretamente no Vercel.
+
+**Como funciona:**
+- As variáveis de ambiente são injetadas no HTML durante o build
+- Elas ficam disponíveis via `window.__ENV__` no navegador
+- Se não estiverem configuradas, o app usa valores placeholder
 
 ## 📋 Passo a Passo
 
