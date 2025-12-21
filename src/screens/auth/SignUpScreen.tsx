@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -152,7 +151,9 @@ export const SignUpScreen: React.FC = () => {
         } else if (
           errorMsg.includes('email de confirmação') ||
           errorMsg.includes('confirmation') ||
-          errorMsg.includes('Verifique sua caixa de entrada')
+          errorMsg.includes('Verifique sua caixa de entrada') ||
+          errorMsg.includes('confirme seu email') ||
+          errorMsg.includes('confirmar email')
         ) {
           // Caso especial: usuário criado mas precisa confirmar email
           showToast.info(
@@ -163,6 +164,17 @@ export const SignUpScreen: React.FC = () => {
             navigation.goBack();
           }, 4000);
           return;
+        } else if (
+          errorMsg.includes('Erro ao criar sessão') ||
+          errorMsg.includes('Sessão não foi ativada') ||
+          errorMsg.includes('Sessão não está ativa')
+        ) {
+          // Erro de sessão - pode ser problema de configuração ou confirmação de email
+          errorMessage = 'Erro ao criar sessão. Isso pode acontecer se a confirmação de email estiver habilitada no Supabase. Verifique sua caixa de entrada para confirmar seu email ou entre em contato com o administrador.';
+        } else if (errorMsg.includes('RLS') || errorMsg.includes('row-level security')) {
+          errorMessage = 'Erro de permissão. Entre em contato com o administrador do sistema.';
+        } else if (errorMsg.includes('foreign key') || errorMsg.includes('violates foreign key')) {
+          errorMessage = 'Erro ao associar polo. Verifique se o polo selecionado existe.';
         } else {
           errorMessage = errorMsg || 'Ocorreu um erro ao criar sua conta. Tente novamente.';
         }
@@ -595,13 +607,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: 'transparent',
-    border: 'none',
-    outline: 'none',
-    cursor: 'pointer',
     width: '100%',
-    appearance: 'auto',
-    WebkitAppearance: 'menulist',
-    MozAppearance: 'menulist',
+    // Propriedades CSS específicas para web devem ser aplicadas via className ou style inline
+    // border: 'none',
+    // outline: 'none',
+    // cursor: 'pointer',
+    // appearance: 'auto',
+    // WebkitAppearance: 'menulist',
+    // MozAppearance: 'menulist',
   },
   selectNative: {
     flex: 1,
