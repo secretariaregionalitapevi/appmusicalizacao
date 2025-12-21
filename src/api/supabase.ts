@@ -38,8 +38,15 @@ const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://placeholder.supabase.co')
 const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'placeholder-key');
 
 // Log para debug (sempre logar em produção também para debug no Vercel)
+const windowEnv = Platform.OS === 'web' && typeof window !== 'undefined' ? (window as any).__ENV__ || (window as any)._env_ : null;
+
 const debugInfo = {
-  hasWindowEnv: Platform.OS === 'web' && typeof window !== 'undefined' && !!(window as any).__ENV__,
+  hasWindowEnv: !!windowEnv,
+  windowEnvKeys: windowEnv ? Object.keys(windowEnv) : [],
+  windowEnvValues: windowEnv ? {
+    SUPABASE_URL: windowEnv.SUPABASE_URL ? (windowEnv.SUPABASE_URL.substring(0, 40) + '...') : 'MISSING',
+    SUPABASE_ANON_KEY: windowEnv.SUPABASE_ANON_KEY ? (windowEnv.SUPABASE_ANON_KEY.substring(0, 20) + '...') : 'MISSING',
+  } : null,
   hasExpoConfigUrl: !!Constants.expoConfig?.extra?.supabaseUrl,
   hasExpoConfigKey: !!Constants.expoConfig?.extra?.supabaseAnonKey,
   hasExpoConfigUrlUpper: !!Constants.expoConfig?.extra?.SUPABASE_URL,
@@ -49,14 +56,20 @@ const debugInfo = {
   urlLength: supabaseUrl.length,
   keyLength: supabaseAnonKey.length,
   urlPreview: supabaseUrl.substring(0, 40) + '...',
-  isConfigured: !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder'),
+  isConfigured: !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder') && supabaseUrl !== '' && supabaseAnonKey !== '',
   allExtraKeys: Constants.expoConfig?.extra ? Object.keys(Constants.expoConfig.extra) : [],
-  windowEnvKeys: Platform.OS === 'web' && typeof window !== 'undefined' && (window as any).__ENV__ 
-    ? Object.keys((window as any).__ENV__) 
-    : [],
 };
 
 console.log('🔧 Supabase Config Debug:', debugInfo);
+
+// Aviso crítico se não estiver configurado
+if (!debugInfo.isConfigured) {
+  console.error('❌ CRÍTICO: Supabase não configurado!');
+  console.error('📋 Ações necessárias:');
+  console.error('   1. Acesse Vercel → Settings → Environment Variables');
+  console.error('   2. Adicione SUPABASE_URL e SUPABASE_ANON_KEY');
+  console.error('   3. Faça um novo deploy');
+}
 
 // Aviso em desenvolvimento se não houver credenciais
 const hasConfig = 

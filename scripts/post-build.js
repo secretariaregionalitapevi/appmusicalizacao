@@ -38,32 +38,52 @@ const envVars = {
 };
 
 // Criar script para injetar variáveis no window
+// IMPORTANTE: Este script deve ser executado ANTES de qualquer outro script
 const envScript = `
 <script>
   // Injetar variáveis de ambiente no window para acesso no runtime
-  window.__ENV__ = ${JSON.stringify(envVars)};
-  window._env_ = ${JSON.stringify(envVars)};
-  
-  // Log de debug (apenas em desenvolvimento)
-  if (window.__ENV__.APP_ENV === 'development') {
-    console.log('🔧 Environment variables loaded:', {
+  // CRÍTICO: Executar imediatamente, antes de qualquer outro código
+  (function() {
+    window.__ENV__ = ${JSON.stringify(envVars)};
+    window._env_ = ${JSON.stringify(envVars)};
+    
+    // SEMPRE logar para debug (mesmo em produção)
+    console.log('🔧 Environment variables injected:', {
       hasSupabaseUrl: !!window.__ENV__.SUPABASE_URL,
       hasSupabaseKey: !!window.__ENV__.SUPABASE_ANON_KEY,
-      urlPreview: window.__ENV__.SUPABASE_URL ? window.__ENV__.SUPABASE_URL.substring(0, 40) + '...' : 'missing',
+      urlPreview: window.__ENV__.SUPABASE_URL ? window.__ENV__.SUPABASE_URL.substring(0, 40) + '...' : 'MISSING',
+      keyPreview: window.__ENV__.SUPABASE_ANON_KEY ? window.__ENV__.SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'MISSING',
       isConfigured: !window.__ENV__.SUPABASE_URL.includes('placeholder') && 
-                    !window.__ENV__.SUPABASE_ANON_KEY.includes('placeholder')
+                    !window.__ENV__.SUPABASE_ANON_KEY.includes('placeholder') &&
+                    window.__ENV__.SUPABASE_URL !== '' &&
+                    window.__ENV__.SUPABASE_ANON_KEY !== '',
+      allKeys: Object.keys(window.__ENV__)
     });
-  }
+    
+    // Aviso se não estiver configurado
+    if (!window.__ENV__.SUPABASE_URL || window.__ENV__.SUPABASE_URL === '' || window.__ENV__.SUPABASE_URL.includes('placeholder')) {
+      console.error('❌ SUPABASE_URL não configurado! Configure no Vercel: Settings → Environment Variables');
+    }
+    if (!window.__ENV__.SUPABASE_ANON_KEY || window.__ENV__.SUPABASE_ANON_KEY === '' || window.__ENV__.SUPABASE_ANON_KEY.includes('placeholder')) {
+      console.error('❌ SUPABASE_ANON_KEY não configurado! Configure no Vercel: Settings → Environment Variables');
+    }
+  })();
 </script>
 `;
 
-// Inserir o script antes do fechamento do </head> ou no início do <body>
+// Inserir o script ANTES de qualquer outro script, preferencialmente no <head>
+// Isso garante que as variáveis estejam disponíveis quando o código React carregar
 if (html.includes('</head>')) {
+  // Inserir antes do fechamento do </head>, mas depois de qualquer meta tag
   html = html.replace('</head>', `${envScript}</head>`);
+} else if (html.includes('<head>')) {
+  // Se tem <head> mas não tem </head>, inserir logo após <head>
+  html = html.replace('<head>', `<head>${envScript}`);
 } else if (html.includes('<body>')) {
+  // Fallback: inserir no início do <body>
   html = html.replace('<body>', `<body>${envScript}`);
 } else {
-  // Se não encontrar head ou body, inserir no início
+  // Último recurso: inserir no início do HTML
   html = envScript + html;
 }
 
