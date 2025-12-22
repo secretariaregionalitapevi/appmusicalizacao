@@ -1,7 +1,7 @@
 /**
  * Tela inicial do aplicativo - Dashboard estilo MBX Academy
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -393,13 +393,12 @@ export const HomeScreen: React.FC = () => {
     fetchPoloName();
   }, [profile?.poloId]);
 
-  // Carregar estatísticas e dados do dashboard
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
+  // Função para carregar dados do dashboard
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        // Buscar estatísticas de alunos
+      // Buscar estatísticas de alunos
         const { data: studentsData, error: studentsError } = await supabase
           .from('musicalizacao_students')
           .select('id, is_active, gender');
@@ -689,20 +688,27 @@ export const HomeScreen: React.FC = () => {
           console.log('Nenhuma aula completada encontrada');
           setStudentsWithConsecutiveAbsences([]);
         }
-      } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  // Carregar dados quando o perfil estiver disponível
+  useEffect(() => {
     if (profile) {
       loadDashboardData();
     }
-  }, [profile]);
+  }, [profile, loadDashboardData]);
 
   return (
-    <AdminLayout currentScreen="Home" showPageTitle={false}>
+    <AdminLayout 
+      currentScreen="Home" 
+      showPageTitle={false}
+      onRefresh={loadDashboardData}
+      refreshing={loading}
+    >
       <ScrollView
         style={styles.mainContent}
         contentContainerStyle={[styles.mainContentScroll, isMobile && styles.mainContentScrollMobile]}

@@ -161,7 +161,13 @@ export const StudentsScreen: React.FC = () => {
   };
 
   return (
-    <AdminLayout title="Cadastro de Alunos" currentScreen="Students" showPageTitle={false}>
+    <AdminLayout 
+      title="Cadastro de Alunos" 
+      currentScreen="Students" 
+      showPageTitle={false}
+      onRefresh={loadStudents}
+      refreshing={loading}
+    >
       {/* Título da Página */}
       <Text style={styles.pageTitle}>Cadastro de Alunos</Text>
 

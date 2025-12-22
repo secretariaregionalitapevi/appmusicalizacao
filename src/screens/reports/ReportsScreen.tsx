@@ -221,7 +221,13 @@ export const ReportsScreen: React.FC = () => {
   };
 
   return (
-    <AdminLayout title="Relatórios" currentScreen="Reports" showPageTitle={false}>
+    <AdminLayout 
+      title="Relatórios" 
+      currentScreen="Reports" 
+      showPageTitle={false}
+      onRefresh={loadReports}
+      refreshing={loading}
+    >
       {/* Título da Página */}
       <View style={styles.headerContainer}>
         <Text style={styles.pageTitle}>Relatórios</Text>

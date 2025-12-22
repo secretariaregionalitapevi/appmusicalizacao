@@ -13,6 +13,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +39,8 @@ interface AdminLayoutProps {
   children: React.ReactNode;
   currentScreen?: 'Home' | 'Calendar' | 'Classes' | 'Students' | 'Attendance' | 'Reports' | 'Profile';
   showPageTitle?: boolean;
+  onRefresh?: () => Promise<void> | void;
+  refreshing?: boolean;
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -47,6 +50,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
   currentScreen = 'Home',
   showPageTitle = true,
+  onRefresh,
+  refreshing = false,
 }) => {
   const navigation = useNavigation<NavigationProp>();
   const { profile, logout } = useAuth();
@@ -63,11 +68,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [poloName, setPoloName] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const userMenuRef = useRef<View>(null);
   const messagesRef = useRef<View>(null);
   const notificationsRef = useRef<View>(null);
   const sidebarAnimation = useRef(new Animated.Value(!initialIsMobile ? 1 : 0)).current;
   const overlayAnimation = useRef(new Animated.Value(0)).current;
+
+  // Função de refresh
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Usar refreshing prop se fornecida, caso contrário usar estado interno
+  const refreshingState = refreshing !== undefined ? refreshing : isRefreshing;
   
   // Mensagens e notificações simuladas do ambiente de administração da escola musical
   const mockMessages = [
@@ -698,6 +721,34 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             showsVerticalScrollIndicator={true}
             bounces={!isWeb}
             scrollEnabled={!isMobile || !sidebarOpen}
+            nestedScrollEnabled={!isWeb}
+            keyboardShouldPersistTaps="handled"
+            // Habilitar pull-to-refresh em todas as plataformas mobile
+            alwaysBounceVertical={!isWeb && onRefresh ? true : false}
+            // Otimizações para Android/HyperOS
+            removeClippedSubviews={Platform.OS !== 'ios' && Platform.OS !== 'web' ? true : false}
+            scrollEventThrottle={16}
+            refreshControl={
+              !isWeb && onRefresh ? (
+                <RefreshControl
+                  refreshing={refreshingState}
+                  onRefresh={handleRefresh}
+                  // iOS: tintColor para a cor do spinner
+                  tintColor={Platform.OS === 'ios' ? '#033D60' : undefined}
+                  // Android/HyperOS: colors para a cor do spinner
+                  colors={Platform.OS !== 'ios' && Platform.OS !== 'web' ? ['#033D60'] : undefined}
+                  // Android/HyperOS: offset para não sobrepor o header
+                  progressViewOffset={Platform.OS !== 'ios' && Platform.OS !== 'web' ? 0 : undefined}
+                  // Android/HyperOS: título do refresh
+                  title={Platform.OS !== 'ios' && Platform.OS !== 'web' ? 'Puxe para atualizar' : undefined}
+                  titleColor={Platform.OS !== 'ios' && Platform.OS !== 'web' ? '#6B7280' : undefined}
+                  progressBackgroundColor={Platform.OS !== 'ios' && Platform.OS !== 'web' ? '#F9FAFB' : undefined}
+                  // Android/HyperOS: tamanho do spinner
+                  size={Platform.OS !== 'ios' && Platform.OS !== 'web' ? 'default' : undefined}
+                  enabled={true}
+                />
+              ) : undefined
+            }
           >
             {showPageTitle && title && <Text style={styles.pageTitle}>{title}</Text>}
             {children}
@@ -780,6 +831,7 @@ const styles = StyleSheet.create({
       overflow: 'hidden',
       minWidth: '100%',
       maxWidth: '100%',
+      position: 'relative',
     }),
   },
   header: {
@@ -1013,6 +1065,7 @@ const styles = StyleSheet.create({
       overflow: 'hidden',
       minWidth: '100%',
       maxWidth: '100%',
+      height: '100%',
     }),
   },
   contentContainerMobile: {
@@ -1023,6 +1076,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     alignItems: 'stretch',
     overflow: 'hidden',
+    height: '100%',
+    flex: 1,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1034,6 +1089,8 @@ const styles = StyleSheet.create({
       left: 0,
       right: 0,
       bottom: 0,
+      width: '100%',
+      height: '100%',
     }),
   },
   sidebar: {
@@ -1112,14 +1169,13 @@ const styles = StyleSheet.create({
     minWidth: '100%',
     maxWidth: '100%',
     flex: 1,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+    position: 'relative',
     zIndex: 1,
     marginLeft: 0,
     paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   mainContentMobileWithSidebar: {
     // Quando sidebar está aberto, conteúdo fica atrás mas ainda visível
@@ -1133,14 +1189,23 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: '100%',
     maxWidth: '100%',
+    flex: 1,
   },
   scrollContent: {
     padding: isWeb ? spacing.xl : spacing.md,
+    ...(isWeb ? {} : {
+      width: '100%',
+      minWidth: '100%',
+      maxWidth: '100%',
+    }),
   },
   scrollContentMobile: {
     padding: spacing.md,
     paddingBottom: 20,
+    width: '100%',
     minWidth: '100%',
+    maxWidth: '100%',
+    flexGrow: 1,
   },
   pageTitle: {
     fontSize: 24,
