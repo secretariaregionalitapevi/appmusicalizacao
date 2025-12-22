@@ -1202,7 +1202,7 @@ const styles = StyleSheet.create({
   scrollContentMobile: {
     paddingTop: spacing.sm,
     paddingBottom: 20,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: 0,
     width: '100%',
     minWidth: '100%',
     maxWidth: '100%',

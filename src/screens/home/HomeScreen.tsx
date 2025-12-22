@@ -709,19 +709,14 @@ export const HomeScreen: React.FC = () => {
       onRefresh={loadDashboardData}
       refreshing={loading}
     >
-      <View style={[
-        styles.dashboardContainer,
-        isMobile && {
-          paddingHorizontal: 0,
-          marginHorizontal: 0,
-        }
-      ]}>
+      <View style={styles.dashboardContainer}>
           {/* Header Section */}
           <View style={[
             styles.dashboardHeader,
             isMobile && {
               flexDirection: 'column',
               gap: spacing.md,
+              paddingHorizontal: spacing.md,
             }
           ]}>
             <View>
@@ -1366,6 +1361,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '100%',
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
   },
   greeting: {
     fontSize: 24,
@@ -1417,11 +1414,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     width: '100%',
     marginHorizontal: 0,
-    paddingHorizontal: 0,
+    paddingHorizontal: spacing.sm,
     marginLeft: 0,
     marginRight: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
   },
   metricCard: {
     flex: 1,
@@ -1449,13 +1444,13 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     marginHorizontal: 0,
     marginLeft: 0,
     marginRight: 0,
     marginTop: 0,
-    marginBottom: spacing.sm,
+    marginBottom: 0,
   },
   metricCardHeader: {
     flexDirection: 'row',
@@ -1513,6 +1508,7 @@ const styles = StyleSheet.create({
   analyticsRowMobile: {
     flexDirection: 'column',
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   analyticsCard: {
     flex: 1,
@@ -1870,6 +1866,7 @@ const styles = StyleSheet.create({
   activitiesRowMobile: {
     flexDirection: 'column',
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   activitiesCard: {
     flex: 1,
