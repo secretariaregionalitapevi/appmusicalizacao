@@ -26,10 +26,21 @@ BEGIN
   -- ============================================
   INSERT INTO musicalizacao_polos (id, nome, cidade, regional, endereco, telefone, email, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Polo Itapevi', 'Itapevi', 'Regional Itapevi', 'Rua das Flores, 123', '(11) 99999-1111', 'itapevi@ccb.org.br', true),
-  ('00000000-0000-0000-0000-000000000002', 'Polo Barueri', 'Barueri', 'Regional Itapevi', 'Av. Principal, 456', '(11) 99999-2222', 'barueri@ccb.org.br', true),
-  ('00000000-0000-0000-0000-000000000003', 'Polo Osasco', 'Osasco', 'Regional Itapevi', 'Rua Central, 789', '(11) 99999-3333', 'osasco@ccb.org.br', true)
-  ON CONFLICT DO NOTHING;
+  ('00000000-0000-0000-0000-000000000001', 'Polo Cotia', 'Cotia', 'Regional Itapevi', 'Rua das Flores, 123', '(11) 99999-1111', 'cotia@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000002', 'Polo Caucaia do Alto', 'Caucaia do Alto', 'Regional Itapevi', 'Av. Principal, 456', '(11) 99999-2222', 'caucaia@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000003', 'Polo Vargem Grande Paulista', 'Vargem Grande Paulista', 'Regional Itapevi', 'Rua Central, 789', '(11) 99999-3333', 'vargemgrande@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000004', 'Polo Itapevi', 'Itapevi', 'Regional Itapevi', 'Rua das Palmeiras, 321', '(11) 99999-4444', 'itapevi@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000005', 'Polo Jandira', 'Jandira', 'Regional Itapevi', 'Av. das Acácias, 654', '(11) 99999-5555', 'jandira@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000006', 'Polo Santana de Parnaíba', 'Santana de Parnaíba', 'Regional Itapevi', 'Rua dos Ipês, 987', '(11) 99999-6666', 'santanaparnaiba@ccb.org.br', true),
+  ('00000000-0000-0000-0000-000000000007', 'Polo Pirapora do Bom Jesus', 'Pirapora do Bom Jesus', 'Regional Itapevi', 'Av. dos Jasmins, 147', '(11) 99999-7777', 'pirapora@ccb.org.br', true)
+  ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    cidade = EXCLUDED.cidade,
+    regional = EXCLUDED.regional,
+    endereco = EXCLUDED.endereco,
+    telefone = EXCLUDED.telefone,
+    email = EXCLUDED.email,
+    is_active = EXCLUDED.is_active;
 
   -- ============================================
   -- 2. INSTRUTORES
@@ -37,10 +48,10 @@ VALUES
   -- Nota: profile_id pode ser NULL ou referenciar um profile real
   INSERT INTO musicalizacao_instructors (id, profile_id, full_name, specialty, regional, locals, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000101', NULL, 'Maria Silva', 'Musicalização Infantil', 'Regional Itapevi', ARRAY['Itapevi', 'Barueri'], true),
-  ('00000000-0000-0000-0000-000000000102', NULL, 'João Santos', 'Canto Coral', 'Regional Itapevi', ARRAY['Osasco', 'Itapevi'], true),
-  ('00000000-0000-0000-0000-000000000103', NULL, 'Ana Costa', 'Instrumentos de Corda', 'Regional Itapevi', ARRAY['Barueri'], true),
-  ('00000000-0000-0000-0000-000000000104', NULL, 'Carlos Oliveira', 'Teoria Musical', 'Regional Itapevi', ARRAY['Itapevi', 'Osasco'], true)
+  ('00000000-0000-0000-0000-000000000101', NULL, 'Maria Silva', 'Musicalização Infantil', 'Regional Itapevi', ARRAY['Itapevi', 'Cotia'], true),
+  ('00000000-0000-0000-0000-000000000102', NULL, 'João Santos', 'Canto Coral', 'Regional Itapevi', ARRAY['Jandira', 'Itapevi'], true),
+  ('00000000-0000-0000-0000-000000000103', NULL, 'Ana Costa', 'Instrumentos de Corda', 'Regional Itapevi', ARRAY['Vargem Grande Paulista'], true),
+  ('00000000-0000-0000-0000-000000000104', NULL, 'Carlos Oliveira', 'Teoria Musical', 'Regional Itapevi', ARRAY['Itapevi', 'Santana de Parnaíba'], true)
   ON CONFLICT DO NOTHING;
 
   -- ============================================
@@ -52,16 +63,16 @@ VALUES
   responsible_email, address, regional, local, is_active, enrollment_date, polo_id
 )
 VALUES
-  ('00000000-0000-0000-0000-000000000201', 'Pedro Henrique Almeida', '2015-03-15', 'male', 'Roberto Almeida', '(11) 98765-4321', 'roberto@email.com', 'Rua A, 100', 'Regional Itapevi', 'Itapevi', true, '2024-01-15', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000202', 'Julia Fernanda Souza', '2016-07-22', 'female', 'Fernanda Souza', '(11) 98765-4322', 'fernanda@email.com', 'Rua B, 200', 'Regional Itapevi', 'Itapevi', true, '2024-02-01', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000203', 'Lucas Gabriel Lima', '2015-11-08', 'male', 'Gabriel Lima', '(11) 98765-4323', 'gabriel@email.com', 'Rua C, 300', 'Regional Itapevi', 'Barueri', true, '2024-01-20', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000204', 'Isabella Maria Ferreira', '2016-05-30', 'female', 'Maria Ferreira', '(11) 98765-4324', 'maria@email.com', 'Rua D, 400', 'Regional Itapevi', 'Barueri', true, '2024-02-10', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000205', 'Rafael Augusto Rocha', '2015-09-12', 'male', 'Augusto Rocha', '(11) 98765-4325', 'augusto@email.com', 'Rua E, 500', 'Regional Itapevi', 'Osasco', true, '2024-01-25', '00000000-0000-0000-0000-000000000003'),
-  ('00000000-0000-0000-0000-000000000206', 'Sophia Beatriz Martins', '2016-12-05', 'female', 'Beatriz Martins', '(11) 98765-4326', 'beatriz@email.com', 'Rua F, 600', 'Regional Itapevi', 'Osasco', false, '2024-02-15', '00000000-0000-0000-0000-000000000003'),
-  ('00000000-0000-0000-0000-000000000207', 'Enzo Miguel Pereira', '2015-04-18', 'male', 'Miguel Pereira', '(11) 98765-4327', 'miguel@email.com', 'Rua G, 700', 'Regional Itapevi', 'Itapevi', true, '2024-03-01', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000208', 'Valentina Luiza Barbosa', '2016-08-25', 'female', 'Luiza Barbosa', '(11) 98765-4328', 'luiza@email.com', 'Rua H, 800', 'Regional Itapevi', 'Barueri', false, '2024-03-05', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000209', 'Arthur Felipe Cardoso', '2015-01-14', 'male', 'Felipe Cardoso', '(11) 98765-4329', 'felipe@email.com', 'Rua I, 900', 'Regional Itapevi', 'Osasco', false, '2024-03-10', '00000000-0000-0000-0000-000000000003'),
-  ('00000000-0000-0000-0000-000000000210', 'Laura Eduarda Nunes', '2016-10-03', 'female', 'Eduarda Nunes', '(11) 98765-4330', 'eduarda@email.com', 'Rua J, 1000', 'Regional Itapevi', 'Itapevi', true, '2024-03-15', '00000000-0000-0000-0000-000000000001')
+  ('00000000-0000-0000-0000-000000000201', 'Pedro Henrique Almeida', '2015-03-15', 'male', 'Roberto Almeida', '(11) 98765-4321', 'roberto@email.com', 'Rua A, 100', 'Regional Itapevi', 'Itapevi', true, '2024-01-15', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000202', 'Julia Fernanda Souza', '2016-07-22', 'female', 'Fernanda Souza', '(11) 98765-4322', 'fernanda@email.com', 'Rua B, 200', 'Regional Itapevi', 'Itapevi', true, '2024-02-01', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000203', 'Lucas Gabriel Lima', '2015-11-08', 'male', 'Gabriel Lima', '(11) 98765-4323', 'gabriel@email.com', 'Rua C, 300', 'Regional Itapevi', 'Caucaia do Alto', true, '2024-01-20', '00000000-0000-0000-0000-000000000002'),
+  ('00000000-0000-0000-0000-000000000204', 'Isabella Maria Ferreira', '2016-05-30', 'female', 'Maria Ferreira', '(11) 98765-4324', 'maria@email.com', 'Rua D, 400', 'Regional Itapevi', 'Vargem Grande Paulista', true, '2024-02-10', '00000000-0000-0000-0000-000000000003'),
+  ('00000000-0000-0000-0000-000000000205', 'Rafael Augusto Rocha', '2015-09-12', 'male', 'Augusto Rocha', '(11) 98765-4325', 'augusto@email.com', 'Rua E, 500', 'Regional Itapevi', 'Jandira', true, '2024-01-25', '00000000-0000-0000-0000-000000000005'),
+  ('00000000-0000-0000-0000-000000000206', 'Sophia Beatriz Martins', '2016-12-05', 'female', 'Beatriz Martins', '(11) 98765-4326', 'beatriz@email.com', 'Rua F, 600', 'Regional Itapevi', 'Santana de Parnaíba', false, '2024-02-15', '00000000-0000-0000-0000-000000000006'),
+  ('00000000-0000-0000-0000-000000000207', 'Enzo Miguel Pereira', '2015-04-18', 'male', 'Miguel Pereira', '(11) 98765-4327', 'miguel@email.com', 'Rua G, 700', 'Regional Itapevi', 'Itapevi', true, '2024-03-01', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000208', 'Valentina Luiza Barbosa', '2016-08-25', 'female', 'Luiza Barbosa', '(11) 98765-4328', 'luiza@email.com', 'Rua H, 800', 'Regional Itapevi', 'Pirapora do Bom Jesus', false, '2024-03-05', '00000000-0000-0000-0000-000000000007'),
+  ('00000000-0000-0000-0000-000000000209', 'Arthur Felipe Cardoso', '2015-01-14', 'male', 'Felipe Cardoso', '(11) 98765-4329', 'felipe@email.com', 'Rua I, 900', 'Regional Itapevi', 'Cotia', false, '2024-03-10', '00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000210', 'Laura Eduarda Nunes', '2016-10-03', 'female', 'Eduarda Nunes', '(11) 98765-4330', 'eduarda@email.com', 'Rua J, 1000', 'Regional Itapevi', 'Itapevi', true, '2024-03-15', '00000000-0000-0000-0000-000000000004')
   ON CONFLICT (id) DO UPDATE SET
     full_name = EXCLUDED.full_name,
     birth_date = EXCLUDED.birth_date,
@@ -96,20 +107,20 @@ VALUES
   -- 305: 2 dias atrás
   -- 308: 1 dia atrás (mais recente)
   
-  ('00000000-0000-0000-0000-000000000304', 'Teoria Musical Básica', 'Conceitos fundamentais de teoria musical', CURRENT_DATE - INTERVAL '10 days', '14:30:00', '16:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000104', 'completed', 'Material didático utilizado', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000301', 'Introdução à Musicalização', 'Primeira aula de introdução aos conceitos básicos de música', CURRENT_DATE - INTERVAL '7 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula muito produtiva, todos participaram ativamente', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000306', 'Aula de Reforço 1', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '6 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000302', 'Canto e Expressão', 'Aula de canto com foco em expressão vocal', CURRENT_DATE - INTERVAL '5 days', '15:00:00', '16:30:00', 'Regional Itapevi', 'Barueri', '00000000-0000-0000-0000-000000000102', 'completed', 'Boa participação dos alunos', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000307', 'Aula de Reforço 2', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '4 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000303', 'Instrumentos de Corda - Iniciantes', 'Primeira aula prática com violão', CURRENT_DATE - INTERVAL '3 days', '16:00:00', '17:30:00', 'Regional Itapevi', 'Osasco', '00000000-0000-0000-0000-000000000103', 'completed', 'Alunos demonstraram interesse', '00000000-0000-0000-0000-000000000003'),
-  ('00000000-0000-0000-0000-000000000305', 'Prática de Canto Coral', 'Ensaios de canto em grupo', CURRENT_DATE - INTERVAL '2 days', '15:30:00', '17:00:00', 'Regional Itapevi', 'Barueri', '00000000-0000-0000-0000-000000000102', 'completed', 'Harmonia melhorando', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000308', 'Aula de Reforço 3', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '1 day', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000304', 'Teoria Musical Básica', 'Conceitos fundamentais de teoria musical', CURRENT_DATE - INTERVAL '10 days', '14:30:00', '16:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000104', 'completed', 'Material didático utilizado', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000301', 'Introdução à Musicalização', 'Primeira aula de introdução aos conceitos básicos de música', CURRENT_DATE - INTERVAL '7 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula muito produtiva, todos participaram ativamente', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000306', 'Aula de Reforço 1', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '6 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000302', 'Canto e Expressão', 'Aula de canto com foco em expressão vocal', CURRENT_DATE - INTERVAL '5 days', '15:00:00', '16:30:00', 'Regional Itapevi', 'Caucaia do Alto', '00000000-0000-0000-0000-000000000102', 'completed', 'Boa participação dos alunos', '00000000-0000-0000-0000-000000000002'),
+  ('00000000-0000-0000-0000-000000000307', 'Aula de Reforço 2', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '4 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000303', 'Instrumentos de Corda - Iniciantes', 'Primeira aula prática com violão', CURRENT_DATE - INTERVAL '3 days', '16:00:00', '17:30:00', 'Regional Itapevi', 'Vargem Grande Paulista', '00000000-0000-0000-0000-000000000103', 'completed', 'Alunos demonstraram interesse', '00000000-0000-0000-0000-000000000003'),
+  ('00000000-0000-0000-0000-000000000305', 'Prática de Canto Coral', 'Ensaios de canto em grupo', CURRENT_DATE - INTERVAL '2 days', '15:30:00', '17:00:00', 'Regional Itapevi', 'Jandira', '00000000-0000-0000-0000-000000000102', 'completed', 'Harmonia melhorando', '00000000-0000-0000-0000-000000000005'),
+  ('00000000-0000-0000-0000-000000000308', 'Aula de Reforço 3', 'Aula de reforço para alunos com dificuldades', CURRENT_DATE - INTERVAL '1 day', '14:00:00', '15:30:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'completed', 'Aula de reforço', '00000000-0000-0000-0000-000000000004'),
   
   -- Aulas agendadas (próximas semanas)
-  ('00000000-0000-0000-0000-000000000309', 'Teoria Musical Intermediária', 'Aprofundamento em teoria musical', CURRENT_DATE + INTERVAL '10 days', '14:30:00', '16:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000104', 'scheduled', 'Preparar exercícios práticos', '00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000310', 'Apresentação de Final de Mês', 'Preparação para apresentação mensal', CURRENT_DATE + INTERVAL '14 days', '18:00:00', '19:30:00', 'Regional Itapevi', 'Barueri', '00000000-0000-0000-0000-000000000102', 'scheduled', 'Ensaio geral para apresentação', '00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000311', 'Musicalização para Iniciantes', 'Nova turma de iniciantes', CURRENT_DATE + INTERVAL '12 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Osasco', '00000000-0000-0000-0000-000000000101', 'scheduled', 'Primeira aula da nova turma', '00000000-0000-0000-0000-000000000003'),
-  ('00000000-0000-0000-0000-000000000312', 'Workshop de Percussão', 'Workshop especial de instrumentos de percussão', CURRENT_DATE + INTERVAL '20 days', '15:00:00', '17:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'scheduled', 'Evento especial', '00000000-0000-0000-0000-000000000001')
+  ('00000000-0000-0000-0000-000000000309', 'Teoria Musical Intermediária', 'Aprofundamento em teoria musical', CURRENT_DATE + INTERVAL '10 days', '14:30:00', '16:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000104', 'scheduled', 'Preparar exercícios práticos', '00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000310', 'Apresentação de Final de Mês', 'Preparação para apresentação mensal', CURRENT_DATE + INTERVAL '14 days', '18:00:00', '19:30:00', 'Regional Itapevi', 'Santana de Parnaíba', '00000000-0000-0000-0000-000000000102', 'scheduled', 'Ensaio geral para apresentação', '00000000-0000-0000-0000-000000000006'),
+  ('00000000-0000-0000-0000-000000000311', 'Musicalização para Iniciantes', 'Nova turma de iniciantes', CURRENT_DATE + INTERVAL '12 days', '14:00:00', '15:30:00', 'Regional Itapevi', 'Pirapora do Bom Jesus', '00000000-0000-0000-0000-000000000101', 'scheduled', 'Primeira aula da nova turma', '00000000-0000-0000-0000-000000000007'),
+  ('00000000-0000-0000-0000-000000000312', 'Workshop de Percussão', 'Workshop especial de instrumentos de percussão', CURRENT_DATE + INTERVAL '20 days', '15:00:00', '17:00:00', 'Regional Itapevi', 'Itapevi', '00000000-0000-0000-0000-000000000101', 'scheduled', 'Evento especial', '00000000-0000-0000-0000-000000000004')
   ON CONFLICT (id) DO UPDATE SET 
     status = EXCLUDED.status,
     class_date = EXCLUDED.class_date;
@@ -195,9 +206,9 @@ VALUES
    'Regional Itapevi', NULL,
    CURRENT_DATE - INTERVAL '90 days', CURRENT_DATE),
   
-  ('00000000-0000-0000-0000-000000000403', 'Progresso dos Alunos - Barueri', 'student_progress',
-   '{"local": "Barueri", "period": "atual"}'::jsonb,
-   'Regional Itapevi', 'Barueri',
+  ('00000000-0000-0000-0000-000000000403', 'Progresso dos Alunos - Cotia', 'student_progress',
+   '{"local": "Cotia", "period": "atual"}'::jsonb,
+   'Regional Itapevi', 'Cotia',
    CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE)
   ON CONFLICT DO NOTHING;
 

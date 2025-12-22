@@ -22,6 +22,7 @@ import { spacing } from '@/theme';
 import type { RootStackParamList } from '@/types/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/api/supabase';
+import { AdminLayout } from '@/components/common/AdminLayout';
 
 const isWeb = Platform.OS === 'web';
 
@@ -311,9 +312,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ male, female, total }) => {
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { profile, logout } = useAuth();
-  const { toggleTheme, isDark } = useTheme();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { profile } = useAuth();
   const [poloName, setPoloName] = useState<string | null>(null);
   const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
   const isMobile = screenWidth < 768;
@@ -329,6 +328,12 @@ export const HomeScreen: React.FC = () => {
     femaleStudents: 0,
     maleAttendance: 0,
     femaleAttendance: 0,
+  });
+  const [previousStats, setPreviousStats] = useState({
+    totalStudents: 0,
+    attendanceRate: 0,
+    upcomingClasses: 0,
+    totalClasses: 0,
   });
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [recentClasses, setRecentClasses] = useState<any[]>([]);
@@ -354,18 +359,6 @@ export const HomeScreen: React.FC = () => {
       subscription?.remove();
     };
   }, []);
-
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<View>(null);
-
-  const userName = profile?.fullName?.split(' ')[0] || 'Usuário';
-  const userFullName = profile?.fullName || 'Usuário';
-  const userInitials = userFullName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
 
   // Buscar nome do polo
   useEffect(() => {
@@ -417,10 +410,16 @@ export const HomeScreen: React.FC = () => {
 
         console.log('Estatísticas de alunos:', { totalStudents, activeStudents, maleStudents, femaleStudents });
 
-        // Buscar estatísticas de aulas
+        // Calcular período atual (últimos 7 dias) e anterior (14-7 dias atrás)
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        
+        // Buscar estatísticas de aulas do período atual
         const { data: classesData, error: classesError } = await supabase
           .from('musicalizacao_classes')
-          .select('id, status, class_date');
+          .select('id, status, class_date')
+          .gte('class_date', sevenDaysAgo.toISOString().split('T')[0]);
 
         if (classesError) {
           console.error('Erro ao buscar aulas:', classesError);
@@ -434,14 +433,16 @@ export const HomeScreen: React.FC = () => {
 
         console.log('Estatísticas de aulas:', { totalClasses, completedClasses, upcomingClasses });
 
-        // Buscar estatísticas de presença
+        // Buscar estatísticas de presença do período atual
         const { data: attendanceData, error: attendanceError } = await supabase
           .from('musicalizacao_attendance')
           .select(`
             id,
             is_present,
+            recorded_at,
             student:musicalizacao_students!student_id (gender)
-          `);
+          `)
+          .gte('recorded_at', sevenDaysAgo.toISOString());
 
         if (attendanceError) {
           console.error('Erro ao buscar presenças:', attendanceError);
@@ -457,6 +458,45 @@ export const HomeScreen: React.FC = () => {
         const attendanceRate = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
 
         console.log('Estatísticas de presença:', { totalAttendance, presentCount, attendanceRate });
+
+        // Buscar dados do período anterior (14-7 dias atrás)
+        // Alunos do período anterior - usar o mesmo total (não muda entre períodos)
+        const previousTotalStudents = totalStudents;
+        
+        // Aulas do período anterior (14-7 dias atrás)
+        const { data: previousClassesData } = await supabase
+          .from('musicalizacao_classes')
+          .select('id, status, class_date')
+          .gte('class_date', fourteenDaysAgo.toISOString().split('T')[0])
+          .lt('class_date', sevenDaysAgo.toISOString().split('T')[0]);
+        
+        const previousTotalClasses = previousClassesData?.length || 0;
+        const previousUpcomingClasses = previousClassesData?.filter(c => c.status === 'scheduled').length || 0;
+        
+        // Presenças do período anterior
+        const { data: previousAttendanceData } = await supabase
+          .from('musicalizacao_attendance')
+          .select(`
+            id,
+            is_present,
+            recorded_at
+          `)
+          .gte('recorded_at', fourteenDaysAgo.toISOString())
+          .lt('recorded_at', sevenDaysAgo.toISOString());
+        
+        const previousTotalAttendance = previousAttendanceData?.length || 0;
+        const previousPresentCount = previousAttendanceData?.filter(a => {
+          const isPresent = a.is_present === true || a.is_present === 'true' || a.is_present === 1;
+          return isPresent;
+        }).length || 0;
+        const previousAttendanceRate = previousTotalAttendance > 0 ? (previousPresentCount / previousTotalAttendance) * 100 : 0;
+        
+        setPreviousStats({
+          totalStudents: previousTotalStudents,
+          attendanceRate: previousAttendanceRate,
+          upcomingClasses: previousUpcomingClasses,
+          totalClasses: previousTotalClasses,
+        });
 
         // Calcular presença por gênero
         const maleAttendance = attendanceData?.filter(a => {
@@ -651,196 +691,13 @@ export const HomeScreen: React.FC = () => {
     }
   }, [profile]);
 
-  // Fechar menu ao clicar fora (apenas web)
-  useEffect(() => {
-    if (Platform.OS === 'web' && userMenuOpen) {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (userMenuRef.current && !(userMenuRef.current as any).contains(event.target)) {
-          setUserMenuOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return undefined;
-  }, [userMenuOpen]);
-
-  interface MenuItem {
-    icon: string;
-    label: string;
-    active: boolean;
-    onPress: () => void;
-    hasArrow?: boolean;
-  }
-
-  const menuItems: MenuItem[] = [
-    { 
-      icon: 'home', 
-      label: 'Início', 
-      active: true,
-      onPress: () => {
-        setSidebarOpen(false);
-        // Já está na tela inicial
-      }
-    },
-    { 
-      icon: 'calendar', 
-      label: 'Calendário', 
-      active: false,
-      onPress: () => {
-        setSidebarOpen(false);
-        navigation.navigate('Main', { screen: 'Calendar' });
-      }
-    },
-    { 
-      icon: 'book', 
-      label: 'Aulas', 
-      active: false,
-      onPress: () => {
-        setSidebarOpen(false);
-        navigation.navigate('Main', { screen: 'Classes' });
-      }
-    },
-    { 
-      icon: 'people', 
-      label: 'Cadastro de Alunos', 
-      active: false,
-      onPress: () => {
-        setSidebarOpen(false);
-        navigation.navigate('Main', { screen: 'Students' });
-      }
-    },
-    { 
-      icon: 'checkmark-circle', 
-      label: 'Registro de Presença', 
-      active: false,
-      onPress: () => {
-        setSidebarOpen(false);
-        navigation.navigate('Main', { screen: 'Attendance' });
-      }
-    },
-    { 
-      icon: 'document-text', 
-      label: 'Relatórios', 
-      active: false,
-      onPress: () => {
-        setSidebarOpen(false);
-        navigation.navigate('Main', { screen: 'Reports' });
-      }
-    },
-  ];
-
-  const getIcon = (iconName: string) => {
-    const iconProps = { size: 20, color: '#6B7280' };
-    switch (iconName) {
-      case 'home':
-        return <Ionicons name="home" {...iconProps} />;
-      case 'calendar':
-        return <Ionicons name="calendar" {...iconProps} />;
-      case 'book':
-        return <Ionicons name="book" {...iconProps} />;
-      case 'clipboard-check':
-        return <FontAwesome5 name="clipboard-check" {...iconProps} />;
-      case 'graduation-cap':
-        return <FontAwesome5 name="graduation-cap" {...iconProps} />;
-      case 'file-alt':
-        return <FontAwesome5 name="file-alt" {...iconProps} />;
-      case 'dollar-sign':
-        return <FontAwesome5 name="dollar-sign" {...iconProps} />;
-      case 'book-open':
-        return <Ionicons name="library" {...iconProps} />;
-      case 'library':
-        return <Ionicons name="library-outline" {...iconProps} />;
-      case 'gift':
-        return <FontAwesome5 name="gift" {...iconProps} />;
-      case 'people':
-        return <Ionicons name="people" {...iconProps} />;
-      case 'checkmark-circle':
-        return <Ionicons name="checkmark-circle" {...iconProps} />;
-      case 'document-text':
-        return <Ionicons name="document-text" {...iconProps} />;
-      default:
-        return <MaterialIcons name="circle" {...iconProps} />;
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            onPress={() => setSidebarOpen(!sidebarOpen)}
-            style={styles.menuButton}
-          >
-            <Ionicons name="menu" size={24} color="#1F2937" />
-          </TouchableOpacity>
-          <Image 
-            source={require('../../img/logo-ccb-light.png')} 
-            style={styles.logo} 
-            resizeMode="contain" 
-          />
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="chatbubble-outline" size={20} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="notifications-outline" size={20} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="help-circle-outline" size={20} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setUserMenuOpen(!userMenuOpen)}
-            style={styles.userInitials}
-          >
-            <Text style={styles.userInitialsText}>{userInitials}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.contentContainer}>
-        {/* Sidebar */}
-        <View style={[styles.sidebar, sidebarOpen && styles.sidebarOpen]}>
-          {menuItems.map((item, index) => {
-            const handlePress = () => {
-              if (item.onPress) {
-                item.onPress();
-              }
-            };
-            
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[styles.menuItem, item.active && styles.menuItemActive]}
-                onPress={handlePress}
-              >
-                <View style={styles.menuItemContent}>
-                  {getIcon(item.icon)}
-                  <Text
-                    style={[
-                      styles.menuItemText,
-                      item.active && styles.menuItemTextActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </View>
-                {item.hasArrow && (
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Main Content */}
-        <ScrollView
-          style={styles.mainContent}
-          contentContainerStyle={[styles.mainContentScroll, isMobile && styles.mainContentScrollMobile]}
-          showsHorizontalScrollIndicator={false}
-        >
+    <AdminLayout currentScreen="Home" showPageTitle={false}>
+      <ScrollView
+        style={styles.mainContent}
+        contentContainerStyle={[styles.mainContentScroll, isMobile && styles.mainContentScrollMobile]}
+        showsHorizontalScrollIndicator={false}
+      >
           {/* Header Section */}
           <View style={styles.dashboardHeader}>
             <View>
@@ -875,7 +732,12 @@ export const HomeScreen: React.FC = () => {
                 <Text style={styles.metricCardSubtitle}>
                   {stats.activeStudents} ativos
                 </Text>
-                <Text style={styles.metricCardChange}>0.00%</Text>
+                <View style={styles.metricCardChangeContainer}>
+                  <Text style={[styles.metricCardChange, { color: '#10B981' }]}>
+                    {stats.totalStudents > 0 ? `${Math.round((stats.activeStudents / stats.totalStudents) * 100)}%` : '0%'}
+                  </Text>
+                  <Ionicons name="arrow-up" size={14} color="#10B981" />
+                </View>
               </View>
             </View>
 
@@ -889,7 +751,26 @@ export const HomeScreen: React.FC = () => {
                 <Text style={styles.metricCardSubtitle}>
                   {stats.totalAttendance} registros
                 </Text>
-                <Text style={styles.metricCardChange}>0.00%</Text>
+                <View style={styles.metricCardChangeContainer}>
+                  {(() => {
+                    const change = previousStats.attendanceRate > 0 
+                      ? stats.attendanceRate - previousStats.attendanceRate 
+                      : 0;
+                    const isPositive = change >= 0;
+                    return (
+                      <>
+                        <Text style={[styles.metricCardChange, { color: isPositive ? '#10B981' : '#EF4444' }]}>
+                          {change !== 0 ? `${Math.abs(change).toFixed(1)}%` : '0.0%'}
+                        </Text>
+                        <Ionicons 
+                          name={isPositive ? "arrow-up" : "arrow-down"} 
+                          size={14} 
+                          color={isPositive ? '#10B981' : '#EF4444'} 
+                        />
+                      </>
+                    );
+                  })()}
+                </View>
               </View>
             </View>
 
@@ -903,7 +784,26 @@ export const HomeScreen: React.FC = () => {
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
                 </Text>
-                <Text style={styles.metricCardChange}>0.00%</Text>
+                <View style={styles.metricCardChangeContainer}>
+                  {(() => {
+                    const change = previousStats.upcomingClasses > 0
+                      ? ((stats.upcomingClasses - previousStats.upcomingClasses) / previousStats.upcomingClasses) * 100
+                      : stats.upcomingClasses > 0 ? 100 : 0;
+                    const isPositive = change >= 0;
+                    return (
+                      <>
+                        <Text style={[styles.metricCardChange, { color: isPositive ? '#10B981' : '#EF4444' }]}>
+                          {change !== 0 ? `${Math.abs(change).toFixed(1)}%` : '0.0%'}
+                        </Text>
+                        <Ionicons 
+                          name={isPositive ? "arrow-up" : "arrow-down"} 
+                          size={14} 
+                          color={isPositive ? '#10B981' : '#EF4444'} 
+                        />
+                      </>
+                    );
+                  })()}
+                </View>
               </View>
             </View>
 
@@ -917,7 +817,28 @@ export const HomeScreen: React.FC = () => {
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
                 </Text>
-                <Text style={styles.metricCardChange}>0.00%</Text>
+                <View style={styles.metricCardChangeContainer}>
+                  {(() => {
+                    const change = previousStats.totalClasses > 0
+                      ? ((stats.totalClasses - previousStats.totalClasses) / previousStats.totalClasses) * 100
+                      : stats.totalClasses > 0 ? 100 : 0;
+                    const isPositive = change >= 0;
+                    // Limitar a 100% para evitar valores absurdos
+                    const limitedChange = Math.min(Math.abs(change), 100);
+                    return (
+                      <>
+                        <Text style={[styles.metricCardChange, { color: isPositive ? '#10B981' : '#EF4444' }]}>
+                          {change !== 0 ? `${limitedChange.toFixed(1)}%` : '0.0%'}
+                        </Text>
+                        <Ionicons 
+                          name={isPositive ? "arrow-up" : "arrow-down"} 
+                          size={14} 
+                          color={isPositive ? '#10B981' : '#EF4444'} 
+                        />
+                      </>
+                    );
+                  })()}
+                </View>
               </View>
             </View>
           </View>
@@ -1261,74 +1182,7 @@ export const HomeScreen: React.FC = () => {
             </View>
           </View>
         </ScrollView>
-      </View>
-
-
-      {/* User Menu Dropdown */}
-      {userMenuOpen && (
-        <View style={styles.userMenuContainer} ref={userMenuRef}>
-          <TouchableOpacity
-            style={styles.menuOverlay}
-            activeOpacity={1}
-            onPress={() => setUserMenuOpen(false)}
-          />
-          <View style={styles.userMenu}>
-              {/* User Info Header */}
-              <View style={styles.userMenuHeader}>
-                <View style={styles.userMenuAvatar}>
-                  <Text style={styles.userMenuAvatarText}>{userInitials}</Text>
-                </View>
-                <View style={styles.userMenuInfo}>
-                  <Text style={styles.userMenuName}>{userFullName}</Text>
-                  <Text style={styles.userMenuRA}>{poloName || 'Polo não informado'}</Text>
-                </View>
-              </View>
-
-              {/* Menu Items */}
-              <View style={styles.userMenuItems}>
-                <TouchableOpacity
-                  style={styles.userMenuItem}
-                  onPress={() => {
-                    setUserMenuOpen(false);
-                    navigation.navigate('Main', { screen: 'Profile' });
-                  }}
-                >
-                  <Ionicons name="person-outline" size={20} color="#6B7280" />
-                  <Text style={styles.userMenuItemText}>Perfil</Text>
-                </TouchableOpacity>
-
-                <View style={styles.userMenuDivider} />
-
-                <TouchableOpacity
-                  style={styles.userMenuItem}
-                  onPress={toggleTheme}
-                >
-                  <Ionicons name="moon-outline" size={20} color="#6B7280" />
-                  <Text style={styles.userMenuItemText}>Modo Escuro</Text>
-                  <View style={[styles.toggleSwitch, isDark && styles.toggleSwitchOn]}>
-                    <View style={[styles.toggleSwitchThumb, isDark && styles.toggleSwitchThumbOn]} />
-                  </View>
-                </TouchableOpacity>
-
-                <View style={styles.userMenuDivider} />
-
-                <TouchableOpacity
-                  style={styles.userMenuItem}
-                  onPress={async () => {
-                    setUserMenuOpen(false);
-                    await logout();
-                  }}
-                >
-                  <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-                  <Text style={[styles.userMenuItemText, styles.userMenuItemLogout]}>
-                    Sair
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-        </View>
-      )}
-    </SafeAreaView>
+    </AdminLayout>
   );
 };
 
@@ -1560,10 +1414,14 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '400',
   },
+  metricCardChangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   metricCardChange: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
   },
   analyticsRow: {
     flexDirection: 'row',

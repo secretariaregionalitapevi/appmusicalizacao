@@ -189,23 +189,12 @@ export const AppNavigator: React.FC = () => {
         }
 
         // Verificar perfil quando a sessão mudar
-        // IMPORTANTE: Não reagir imediatamente a SIGNED_UP para evitar mostrar página principal
+        // IMPORTANTE: IGNORAR completamente SIGNED_UP - o signup faz logout imediatamente
         if (event === 'SIGNED_UP') {
-          // Durante signup, aguardar mais tempo antes de verificar
-          // O signup pode fazer logout, então não vamos mostrar a página principal
-          setTimeout(async () => {
-            if (!isMounted) return;
-            const { data: currentSession } = await supabase.auth.getSession();
-            if (currentSession?.session) {
-              // Se ainda há sessão, verificar perfil com flag de signup
-              // Isso dá mais tempo para o perfil ser criado
-              verifyProfileAndSetAuth(currentSession.session.user.id, true);
-              setIsAuthenticated(true);
-            } else {
-              // Se não há sessão, o signup fez logout - não autenticar
-              setIsAuthenticated(false);
-            }
-          }, 1000); // Aumentar delay para dar mais tempo
+          // Durante signup, o código faz logout imediatamente após criar perfil
+          // Não autenticar para evitar mostrar página principal
+          console.log('📝 Evento SIGNED_UP ignorado - signup faz logout imediatamente');
+          setIsAuthenticated(false);
           return;
         }
 

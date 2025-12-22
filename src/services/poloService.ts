@@ -57,11 +57,11 @@ export const poloService = {
       const fallbackPolos = [
         { id: '1', nome: 'Cotia', cidade: 'Cotia', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
         { id: '2', nome: 'Caucaia do Alto', cidade: 'Caucaia do Alto', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-        { id: '3', nome: 'Fazendinha', cidade: 'Fazendinha', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+        { id: '3', nome: 'Vargem Grande Paulista', cidade: 'Vargem Grande Paulista', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
         { id: '4', nome: 'Itapevi', cidade: 'Itapevi', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
         { id: '5', nome: 'Jandira', cidade: 'Jandira', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-        { id: '6', nome: 'Pirapora', cidade: 'Pirapora', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-        { id: '7', nome: 'Vargem Grande', cidade: 'Vargem Grande', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+        { id: '6', nome: 'Santana de Parnaíba', cidade: 'Santana de Parnaíba', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+        { id: '7', nome: 'Pirapora do Bom Jesus', cidade: 'Pirapora do Bom Jesus', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
       ];
       console.log('📋 Retornando polos fallback:', fallbackPolos);
       return fallbackPolos;

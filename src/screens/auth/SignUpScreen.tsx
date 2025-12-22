@@ -70,11 +70,11 @@ export const SignUpScreen: React.FC = () => {
         const fallbackPolos = [
           { id: '1', nome: 'Cotia', cidade: 'Cotia', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
           { id: '2', nome: 'Caucaia do Alto', cidade: 'Caucaia do Alto', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-          { id: '3', nome: 'Fazendinha', cidade: 'Fazendinha', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+          { id: '3', nome: 'Vargem Grande Paulista', cidade: 'Vargem Grande Paulista', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
           { id: '4', nome: 'Itapevi', cidade: 'Itapevi', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
           { id: '5', nome: 'Jandira', cidade: 'Jandira', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-          { id: '6', nome: 'Pirapora', cidade: 'Pirapora', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
-          { id: '7', nome: 'Vargem Grande', cidade: 'Vargem Grande', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+          { id: '6', nome: 'Santana de Parnaíba', cidade: 'Santana de Parnaíba', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
+          { id: '7', nome: 'Pirapora do Bom Jesus', cidade: 'Pirapora do Bom Jesus', regional: 'Itapevi', isActive: true, createdAt: '', updatedAt: '' },
         ];
         console.log('⚠️ Usando polos fallback:', fallbackPolos);
         setPolos(fallbackPolos);
@@ -114,8 +114,14 @@ export const SignUpScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('📝 Tentando criar conta:', { email, nomeCompleto, poloSelecionado });
-      const result = await signUp(email.trim(), password, nomeCompleto.trim(), poloSelecionado);
+      console.log('📝 Tentando criar conta:', { 
+        email, 
+        nomeCompleto, 
+        poloSelecionado,
+        poloSelecionadoType: typeof poloSelecionado,
+        isUUID: poloSelecionado ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloSelecionado) : false
+      });
+      const result = await signUp(email.trim(), password, nomeCompleto.trim(), poloSelecionado || undefined);
       console.log('📦 Resultado do signUp:', {
         user: result.user ? 'existe' : 'null',
         error: result.error?.message,
@@ -341,13 +347,16 @@ export const SignUpScreen: React.FC = () => {
             <Select
               label="Polo"
               icon={<FontAwesome5 name="map-marker-alt" size={16} color={colors.text.secondary} />}
-              options={polos.map((polo) => ({
-                label: `${polo.nome} - ${polo.cidade}`,
-                value: polo.id,
-              }))}
+              options={polos.map((polo) => {
+                console.log('📋 Polo no Select:', { id: polo.id, nome: polo.nome, isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id) });
+                return {
+                  label: `${polo.nome} - ${polo.cidade}`,
+                  value: polo.id,
+                };
+              })}
               value={poloSelecionado}
               onValueChange={(value) => {
-                console.log('📍 Polo selecionado:', value);
+                console.log('📍 Polo selecionado:', value, 'Tipo:', typeof value, 'É UUID:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value));
                 setPoloSelecionado(value);
               }}
               placeholder="Escolha o Polo"

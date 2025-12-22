@@ -3,6 +3,7 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '@/api/supabase';
+import { poloService } from '@/services/poloService';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/models';
 
@@ -171,14 +172,15 @@ export const useAuth = (): UseAuthReturn => {
     let subscription: { unsubscribe?: () => void } | null = null;
     if (authStateChangeResult?.data?.subscription) {
       subscription = authStateChangeResult.data.subscription;
-    } else if (authStateChangeResult?.subscription) {
-      subscription = authStateChangeResult.subscription;
     } else if (authStateChangeResult && typeof authStateChangeResult === 'object') {
       // Pode ser que o retorno seja diretamente o objeto de subscription
-      if ('unsubscribe' in authStateChangeResult) {
-        subscription = authStateChangeResult as any;
-      } else if ('data' in authStateChangeResult && authStateChangeResult.data) {
-        subscription = (authStateChangeResult.data as any);
+      const result = authStateChangeResult as any;
+      if (result.subscription) {
+        subscription = result.subscription;
+      } else if ('unsubscribe' in result) {
+        subscription = result;
+      } else if (result.data) {
+        subscription = result.data;
       }
     }
 
@@ -213,12 +215,8 @@ export const useAuth = (): UseAuthReturn => {
         console.warn('⚠️ Perfil não encontrado. Tentando criar perfil automaticamente...');
         
         try {
-          // Aguardar um pouco para garantir que a sessão está ativa
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Verificar se a sessão está ativa
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (!sessionData?.session) {
+          // Usar a sessão que já temos do login (data.session)
+          if (!data.session) {
             throw new Error('Sessão não está ativa');
           }
           
@@ -232,14 +230,14 @@ export const useAuth = (): UseAuthReturn => {
             .insert({
               id: data.user.id,
               full_name: userFullName,
-              role: 'instrutor',
+              role: 'usuario',
             });
           
           if (profileError) {
             console.error('❌ Erro ao criar perfil automaticamente:', profileError);
             // Se for erro de RLS, informar
             if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
-              throw new Error('Erro de permissão ao criar perfil. Entre em contato com o administrador.');
+              throw new Error('Erro de permissão ao criar perfil. Execute a migration 011_fix_rls_insert_signup_final.sql no Supabase SQL Editor.');
             }
             throw new Error('Não foi possível criar seu perfil automaticamente. Entre em contato com o administrador.');
           }
@@ -300,6 +298,14 @@ export const useAuth = (): UseAuthReturn => {
         console.error('❌ Código:', authError.status);
         console.error('❌ Mensagem:', authError.message);
         
+        // Erro 500 do Supabase - problema no servidor
+        if (authError.status === 500 || authError.message.includes('Database error')) {
+          return { 
+            user: null, 
+            error: new Error('Erro no servidor do Supabase ao criar usuário. Isso pode ser um problema temporário. Tente novamente em alguns instantes ou entre em contato com o administrador.') 
+          };
+        }
+        
         // Se o erro for "email já cadastrado", fazer login e criar perfil se não existir
         if (authError.message.includes('already registered') || authError.message.includes('User already registered') || authError.status === 422) {
           console.log('📝 Email já existe. Fazendo login...');
@@ -318,48 +324,253 @@ export const useAuth = (): UseAuthReturn => {
           
           const userId = loginData.user.id;
           console.log('✅ Login OK. User ID:', userId);
+          console.log('✅ Sessão ativa:', !!loginData.session);
           
           // Verificar se já tem perfil
           const existingProfile = await getProfile(userId);
           if (existingProfile) {
             console.log('✅ Perfil já existe');
-            setUser(loginData.user);
-            setProfile(existingProfile);
             await supabase.auth.signOut(); // Fazer logout para não manter sessão
             return { user: null, error: null };
           }
           
-          // Criar perfil
-          console.log('📝 Criando perfil...');
-          const profileInsert: any = {
-            id: userId,
-            full_name: fullName.trim(),
-            role: 'usuario',
-            status: 'approved',
-          };
+          // Buscar e validar poloId usando poloService como fallback
+          let cidadePolo = null;
+          let poloIdValidado = null;
           
-          if (poloId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
-            profileInsert.polo_id = poloId;
+          if (poloId) {
+            // Se não é UUID, pode ser ID numérico do fallback - buscar polo real
+            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
+              console.log('⚠️ poloId não é UUID, buscando polo real:', poloId);
+              try {
+                // Tentar buscar diretamente no Supabase
+                let { data: allPolos, error: polosError } = await supabase
+                  .from('musicalizacao_polos')
+                  .select('id, nome, cidade, is_active')
+                  .order('nome', { ascending: true });
+                
+                // Se falhar ou vazio, tentar com filtro
+                if (polosError || !allPolos || allPolos.length === 0) {
+                  console.log('⚠️ Tentando buscar polos com filtro is_active...');
+                  const result = await supabase
+                    .from('musicalizacao_polos')
+                    .select('id, nome, cidade, is_active')
+                    .eq('is_active', true)
+                    .order('nome', { ascending: true });
+                  allPolos = result.data;
+                  polosError = result.error;
+                }
+                
+                // Se ainda falhar, usar poloService (que tem fallback)
+                if (polosError || !allPolos || allPolos.length === 0) {
+                  console.log('⚠️ Busca direta falhou, usando poloService...');
+                  try {
+                    const polosFromService = await poloService.getAllPolos();
+                    if (polosFromService && polosFromService.length > 0) {
+                      allPolos = polosFromService.map((p: any) => ({
+                        id: p.id,
+                        nome: p.nome,
+                        cidade: p.cidade,
+                        is_active: p.isActive
+                      }));
+                      console.log('✅ Polos obtidos via poloService:', allPolos.length);
+                    }
+                  } catch (serviceError) {
+                    console.error('❌ Erro ao usar poloService:', serviceError);
+                  }
+                }
+                
+                if (allPolos && allPolos.length > 0) {
+                  console.log('📋 Polos encontrados:', allPolos.length, 'Nomes:', allPolos.map(p => p.nome));
+                  
+                  // Mapear IDs numéricos do fallback para os polos reais
+                  const fallbackMap: { [key: number]: string } = {
+                    1: 'Cotia',
+                    2: 'Caucaia do Alto',
+                    3: 'Vargem Grande Paulista',
+                    4: 'Itapevi',
+                    5: 'Jandira',
+                    6: 'Santana de Parnaíba',
+                    7: 'Pirapora do Bom Jesus'
+                  };
+                  
+                  const index = parseInt(poloId, 10);
+                  const nomeEsperado = fallbackMap[index];
+                  
+                  if (nomeEsperado) {
+                    // Buscar polo pelo nome (case insensitive e parcial)
+                    let polo = allPolos.find(p => p.nome.toLowerCase() === nomeEsperado.toLowerCase());
+                    if (!polo) {
+                      // Tentar busca parcial
+                      polo = allPolos.find(p => p.nome.toLowerCase().includes(nomeEsperado.toLowerCase()) || nomeEsperado.toLowerCase().includes(p.nome.toLowerCase()));
+                    }
+                if (polo) {
+                  // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                    console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                    try {
+                      const { data: realPolo, error: realPoloError } = await supabase
+                        .from('musicalizacao_polos')
+                        .select('id, cidade')
+                        .eq('nome', polo.nome)
+                        .maybeSingle();
+                      
+                      if (!realPoloError && realPolo) {
+                        poloIdValidado = realPolo.id;
+                        cidadePolo = realPolo.cidade || polo.cidade || null;
+                        console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                      } else {
+                        console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } catch (uuidError) {
+                      console.error('❌ Erro ao buscar UUID real:', uuidError);
+                      poloIdValidado = null;
+                      cidadePolo = polo.cidade || null;
+                    }
+                  } else {
+                    poloIdValidado = polo.id;
+                    cidadePolo = polo.cidade || null;
+                    console.log('✅ Polo encontrado pelo nome:', { nome: nomeEsperado, poloId: poloIdValidado, cidade: cidadePolo, nomeReal: polo.nome });
+                  }
+                } else {
+                  console.warn('⚠️ Polo não encontrado pelo nome:', nomeEsperado);
+                  // Se não encontrar pelo nome, usar índice
+                  const indexArray = index - 1;
+                  if (indexArray >= 0 && indexArray < allPolos.length) {
+                    const polo = allPolos[indexArray];
+                    // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                      console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                      try {
+                        const { data: realPolo, error: realPoloError } = await supabase
+                          .from('musicalizacao_polos')
+                          .select('id, cidade')
+                          .eq('nome', polo.nome)
+                          .maybeSingle();
+                        
+                        if (!realPoloError && realPolo) {
+                          poloIdValidado = realPolo.id;
+                          cidadePolo = realPolo.cidade || polo.cidade || null;
+                          console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                        } else {
+                          console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                          poloIdValidado = null;
+                          cidadePolo = polo.cidade || null;
+                        }
+                      } catch (uuidError) {
+                        console.error('❌ Erro ao buscar UUID real:', uuidError);
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } else {
+                      poloIdValidado = polo.id;
+                      cidadePolo = polo.cidade || null;
+                      console.log('✅ Polo encontrado pelo índice:', { index: indexArray, nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                    }
+                  }
+                }
+              } else {
+                // Tentar usar como índice direto
+                const indexArray = index - 1;
+                if (indexArray >= 0 && indexArray < allPolos.length) {
+                  const polo = allPolos[indexArray];
+                  // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                    console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                    try {
+                      const { data: realPolo, error: realPoloError } = await supabase
+                        .from('musicalizacao_polos')
+                        .select('id, cidade')
+                        .eq('nome', polo.nome)
+                        .maybeSingle();
+                      
+                      if (!realPoloError && realPolo) {
+                        poloIdValidado = realPolo.id;
+                        cidadePolo = realPolo.cidade || polo.cidade || null;
+                        console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                      } else {
+                        console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } catch (uuidError) {
+                      console.error('❌ Erro ao buscar UUID real:', uuidError);
+                      poloIdValidado = null;
+                      cidadePolo = polo.cidade || null;
+                    }
+                  } else {
+                    poloIdValidado = polo.id;
+                    cidadePolo = polo.cidade || null;
+                    console.log('✅ Polo encontrado pelo índice direto:', { index: indexArray, nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                  }
+                }
+              }
+                } else {
+                  console.error('❌ Nenhum polo encontrado no banco. Verifique se a tabela musicalizacao_polos existe e tem dados.');
+                }
+              } catch (poloError) {
+                console.error('❌ Erro ao buscar polo:', poloError);
+              }
+            } else {
+              // É UUID válido
+              poloIdValidado = poloId;
+              try {
+                const { data: poloData, error: poloError } = await supabase
+                  .from('musicalizacao_polos')
+                  .select('cidade')
+                  .eq('id', poloId)
+                  .maybeSingle();
+                
+                if (poloError) {
+                  console.error('❌ Erro ao buscar cidade do polo:', poloError);
+                } else {
+                  cidadePolo = poloData?.cidade || null;
+                  console.log('✅ Polo encontrado pelo UUID:', { poloId: poloIdValidado, cidade: cidadePolo });
+                }
+              } catch (poloError) {
+                console.error('❌ Erro ao buscar cidade do polo:', poloError);
+              }
+            }
           }
           
-          const { error: profileError } = await supabase
-            .from('musicalizacao_profiles')
-            .insert(profileInsert);
+          // Criar perfil usando função SECURITY DEFINER que bypassa RLS
+          console.log('📝 Criando perfil usando função SECURITY DEFINER...', { 
+            poloId: poloIdValidado, 
+            cidade: cidadePolo,
+            poloIdOriginal: poloId
+          });
+          
+          const { error: profileError } = await supabase.rpc('musicalizacao_create_profile', {
+            p_user_id: userId,
+            p_full_name: fullName.trim(),
+            p_role: 'usuario',
+            p_status: 'approved',
+            p_polo_id: poloIdValidado,
+            p_cidade: cidadePolo
+          });
           
           if (profileError) {
             console.error('❌ Erro ao criar perfil:', profileError);
-            await supabase.auth.signOut();
+            console.error('❌ Código:', profileError.code);
+            console.error('❌ Mensagem:', profileError.message);
             if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
               return { 
                 user: null, 
-                error: new Error('Erro de permissão RLS. Execute a migration 011_fix_rls_insert_signup_final.sql no Supabase SQL Editor.') 
+                error: new Error('Erro de permissão RLS. Execute a migration 013_fix_rls_insert_definitive.sql no Supabase SQL Editor.') 
               };
             }
             return { user: null, error: new Error(`Erro ao criar perfil: ${profileError.message}`) };
           }
           
-          console.log('✅ Perfil criado');
+          console.log('✅ Perfil criado com sucesso');
+          
+          // FAZER LOGOUT IMEDIATAMENTE após criar perfil para evitar login automático
+          console.log('📝 Fazendo logout IMEDIATAMENTE após criar perfil...');
           await supabase.auth.signOut();
+          await new Promise(resolve => setTimeout(resolve, 300)); // Aguardar logout processar
+          
           return { user: null, error: null };
         }
         
@@ -411,22 +622,207 @@ export const useAuth = (): UseAuthReturn => {
         }
       }
 
-      // Buscar cidade do polo
-      let cidade = null;
+      // Buscar e validar poloId ANTES de criar perfil - usar poloService como fallback
+      let cidadePolo = null;
+      let poloIdValidado = null;
+      
       if (poloId) {
-        try {
-          const { data: poloData } = await supabase
-            .from('musicalizacao_polos')
-            .select('cidade')
-            .eq('id', poloId)
-            .maybeSingle();
-          cidade = poloData?.cidade || null;
-        } catch (poloError) {
-          console.warn('⚠️ Erro ao buscar cidade do polo (não crítico):', poloError);
-          // Continuar sem cidade se houver erro
+        // Se não é UUID, pode ser ID numérico do fallback - buscar polo real
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
+          console.log('⚠️ poloId não é UUID, buscando polo real:', poloId);
+          try {
+            // Tentar buscar diretamente no Supabase
+            let { data: allPolos, error: polosError } = await supabase
+              .from('musicalizacao_polos')
+              .select('id, nome, cidade, is_active')
+              .order('nome', { ascending: true });
+            
+            // Se falhar ou vazio, tentar com filtro
+            if (polosError || !allPolos || allPolos.length === 0) {
+              console.log('⚠️ Tentando buscar polos com filtro is_active...');
+              const result = await supabase
+                .from('musicalizacao_polos')
+                .select('id, nome, cidade, is_active')
+                .eq('is_active', true)
+                .order('nome', { ascending: true });
+              allPolos = result.data;
+              polosError = result.error;
+            }
+            
+            // Se ainda falhar, usar poloService (que tem fallback)
+            if (polosError || !allPolos || allPolos.length === 0) {
+              console.log('⚠️ Busca direta falhou, usando poloService...');
+              try {
+                const polosFromService = await poloService.getAllPolos();
+                if (polosFromService && polosFromService.length > 0) {
+                  allPolos = polosFromService.map((p: any) => ({
+                    id: p.id,
+                    nome: p.nome,
+                    cidade: p.cidade,
+                    is_active: p.isActive
+                  }));
+                  console.log('✅ Polos obtidos via poloService:', allPolos.length);
+                }
+              } catch (serviceError) {
+                console.error('❌ Erro ao usar poloService:', serviceError);
+              }
+            }
+            
+            if (allPolos && allPolos.length > 0) {
+              console.log('📋 Polos encontrados:', allPolos.length, 'Nomes:', allPolos.map(p => `${p.nome} (${p.id.substring(0, 8)}...)`));
+              
+              // Mapear IDs numéricos do fallback para os polos reais
+              const fallbackMap: { [key: number]: string } = {
+                1: 'Cotia',
+                2: 'Caucaia do Alto',
+                3: 'Vargem Grande Paulista',
+                4: 'Itapevi',
+                5: 'Jandira',
+                6: 'Santana de Parnaíba',
+                7: 'Pirapora do Bom Jesus'
+              };
+              
+              const index = parseInt(poloId, 10);
+              const nomeEsperado = fallbackMap[index];
+              
+              if (nomeEsperado) {
+                // Buscar polo pelo nome (case insensitive e parcial)
+                let polo = allPolos.find(p => p.nome.toLowerCase() === nomeEsperado.toLowerCase());
+                if (!polo) {
+                  // Tentar busca parcial
+                  polo = allPolos.find(p => p.nome.toLowerCase().includes(nomeEsperado.toLowerCase()) || nomeEsperado.toLowerCase().includes(p.nome.toLowerCase()));
+                }
+                if (polo) {
+                  // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                    console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                    try {
+                      const { data: realPolo, error: realPoloError } = await supabase
+                        .from('musicalizacao_polos')
+                        .select('id, cidade')
+                        .eq('nome', polo.nome)
+                        .maybeSingle();
+                      
+                      if (!realPoloError && realPolo) {
+                        poloIdValidado = realPolo.id;
+                        cidadePolo = realPolo.cidade || polo.cidade || null;
+                        console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                      } else {
+                        console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } catch (uuidError) {
+                      console.error('❌ Erro ao buscar UUID real:', uuidError);
+                      poloIdValidado = null;
+                      cidadePolo = polo.cidade || null;
+                    }
+                  } else {
+                    poloIdValidado = polo.id;
+                    cidadePolo = polo.cidade || null;
+                    console.log('✅ Polo encontrado pelo nome:', { nome: nomeEsperado, poloId: poloIdValidado, cidade: cidadePolo, nomeReal: polo.nome });
+                  }
+                } else {
+                  console.warn('⚠️ Polo não encontrado pelo nome:', nomeEsperado);
+                  // Se não encontrar pelo nome, usar índice
+                  const indexArray = index - 1;
+                  if (indexArray >= 0 && indexArray < allPolos.length) {
+                    const polo = allPolos[indexArray];
+                    // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                      console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                      try {
+                        const { data: realPolo, error: realPoloError } = await supabase
+                          .from('musicalizacao_polos')
+                          .select('id, cidade')
+                          .eq('nome', polo.nome)
+                          .maybeSingle();
+                        
+                        if (!realPoloError && realPolo) {
+                          poloIdValidado = realPolo.id;
+                          cidadePolo = realPolo.cidade || polo.cidade || null;
+                          console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                        } else {
+                          console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                          poloIdValidado = null;
+                          cidadePolo = polo.cidade || null;
+                        }
+                      } catch (uuidError) {
+                        console.error('❌ Erro ao buscar UUID real:', uuidError);
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } else {
+                      poloIdValidado = polo.id;
+                      cidadePolo = polo.cidade || null;
+                      console.log('✅ Polo encontrado pelo índice:', { index: indexArray, nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                    }
+                  }
+                }
+              } else {
+                // Tentar usar como índice direto
+                const indexArray = index - 1;
+                if (indexArray >= 0 && indexArray < allPolos.length) {
+                  const polo = allPolos[indexArray];
+                  // Se o ID do polo não é UUID (é do fallback), buscar UUID real no banco
+                  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(polo.id)) {
+                    console.log('⚠️ Polo encontrado tem ID numérico, buscando UUID real no banco...');
+                    try {
+                      const { data: realPolo, error: realPoloError } = await supabase
+                        .from('musicalizacao_polos')
+                        .select('id, cidade')
+                        .eq('nome', polo.nome)
+                        .maybeSingle();
+                      
+                      if (!realPoloError && realPolo) {
+                        poloIdValidado = realPolo.id;
+                        cidadePolo = realPolo.cidade || polo.cidade || null;
+                        console.log('✅ UUID real encontrado no banco:', { nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                      } else {
+                        console.warn('⚠️ Não foi possível encontrar UUID real no banco. Usando null para polo_id.');
+                        poloIdValidado = null;
+                        cidadePolo = polo.cidade || null;
+                      }
+                    } catch (uuidError) {
+                      console.error('❌ Erro ao buscar UUID real:', uuidError);
+                      poloIdValidado = null;
+                      cidadePolo = polo.cidade || null;
+                    }
+                  } else {
+                    poloIdValidado = polo.id;
+                    cidadePolo = polo.cidade || null;
+                    console.log('✅ Polo encontrado pelo índice direto:', { index: indexArray, nome: polo.nome, poloId: poloIdValidado, cidade: cidadePolo });
+                  }
+                }
+              }
+            } else {
+              console.error('❌ Nenhum polo encontrado no banco. Verifique se a tabela musicalizacao_polos existe e tem dados.');
+            }
+          } catch (poloError) {
+            console.error('❌ Erro ao buscar polo:', poloError);
+          }
+        } else {
+          // É UUID válido
+          poloIdValidado = poloId;
+          try {
+            const { data: poloData, error: poloError } = await supabase
+              .from('musicalizacao_polos')
+              .select('cidade')
+              .eq('id', poloId)
+              .maybeSingle();
+            
+            if (poloError) {
+              console.error('❌ Erro ao buscar cidade do polo:', poloError);
+            } else {
+              cidadePolo = poloData?.cidade || null;
+              console.log('✅ Polo encontrado pelo UUID:', { poloId: poloIdValidado, cidade: cidadePolo });
+            }
+          } catch (poloError) {
+            console.error('❌ Erro ao buscar cidade do polo:', poloError);
+          }
         }
       }
-
+      
       // Criar perfil - MÍNIMO NECESSÁRIO
       const profileInsert: any = {
         id: authData.user.id,
@@ -436,18 +832,17 @@ export const useAuth = (): UseAuthReturn => {
       };
       
       // Adicionar campos opcionais apenas se fornecidos E válidos
-      // Validar se poloId é UUID válido (não aceitar strings numéricas como "1")
-      if (poloId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(poloId)) {
-        profileInsert.polo_id = poloId;
+      if (poloIdValidado) {
+        profileInsert.polo_id = poloIdValidado;
       }
-      if (cidade) {
-        profileInsert.cidade = cidade;
+      if (cidadePolo) {
+        profileInsert.cidade = cidadePolo;
       }
       
       // Verificar sessão antes de inserir - com múltiplas tentativas
-      let sessionCheck = authData.session ? { session: authData.session } : await supabase.auth.getSession();
+      let sessionCheck = authData.session ? { data: { session: authData.session } } : await supabase.auth.getSession();
       
-      if (!sessionCheck?.session) {
+      if (!sessionCheck?.data?.session) {
         console.warn('⚠️ Sessão não está ativa após signup. Tentando aguardar e verificar novamente...');
         
         // Tentar múltiplas vezes com intervalos crescentes
@@ -456,12 +851,12 @@ export const useAuth = (): UseAuthReturn => {
           console.log(`⏳ Tentativa ${attempt}/3: Aguardando ${waitTime}ms...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
           
-          const { data: checkResult, error: checkError } = await supabase.auth.getSession();
-          if (checkError) {
-            console.error(`❌ Erro ao verificar sessão (tentativa ${attempt}):`, checkError);
+          const checkResult = await supabase.auth.getSession();
+          if (checkResult.error) {
+            console.error(`❌ Erro ao verificar sessão (tentativa ${attempt}):`, checkResult.error);
           }
           
-          if (checkResult?.session) {
+          if (checkResult.data?.session) {
             console.log(`✅ Sessão encontrada na tentativa ${attempt}`);
             sessionCheck = checkResult;
             break;
@@ -469,7 +864,7 @@ export const useAuth = (): UseAuthReturn => {
         }
         
         // Se ainda não há sessão após todas as tentativas
-        if (!sessionCheck?.session) {
+        if (!sessionCheck?.data?.session) {
           console.error('❌ Sessão não foi ativada após múltiplas tentativas');
           
           // Verificar se o email precisa ser confirmado
@@ -478,33 +873,86 @@ export const useAuth = (): UseAuthReturn => {
             // Tentar criar perfil mesmo assim - algumas configurações do Supabase permitem isso
           } else {
             // Se o email está confirmado mas não há sessão, há um problema
-            await supabase.auth.signOut();
-            return { 
-              user: null, 
+          await supabase.auth.signOut();
+          return { 
+            user: null, 
               error: new Error('Erro ao criar sessão. Verifique se o Supabase está configurado corretamente e se a confirmação de email está desabilitada ou confirme seu email antes de continuar.') 
-            };
+          };
           }
         }
       } else {
-        console.log('✅ Sessão ativa. auth.uid() =', sessionCheck.session.user.id);
+        console.log('✅ Sessão ativa. auth.uid() =', sessionCheck.data.session.user.id);
       }
       
       console.log('📝 Tentando inserir perfil:', profileInsert);
-      console.log('📝 Verificando: auth.uid() deve ser igual a id:', sessionCheck?.session?.user.id === authData.user.id);
+      console.log('📝 Verificando: auth.uid() deve ser igual a id:', sessionCheck?.data?.session?.user.id === authData.user.id);
       
       // Se não há sessão, tentar usar o user ID diretamente
       // Isso pode funcionar se as políticas RLS permitirem inserção sem sessão ativa
       // ou se houver um trigger que cria o perfil automaticamente
-      if (!sessionCheck?.session) {
+      if (!sessionCheck?.data?.session) {
         console.warn('⚠️ Tentando criar perfil sem sessão ativa. Isso pode falhar se RLS estiver habilitado.');
         console.warn('💡 Se falhar, o usuário precisará confirmar o email e fazer login primeiro.');
       }
       
-      const { data: profileData, error: profileError } = await supabase
+      // Tentar usar função SECURITY DEFINER primeiro (bypassa RLS)
+      let profileData = null;
+      let profileError = null;
+      
+      // Usar os valores já calculados acima (poloIdValidado e cidadePolo)
+      console.log('📝 Dados para criar perfil:', {
+        user_id: authData.user.id,
+        full_name: fullName.trim(),
+        polo_id: poloIdValidado,
+        cidade: cidadePolo || null,
+        poloId_original: poloId
+      });
+      
+      try {
+        const { error: rpcError } = await supabase.rpc('musicalizacao_create_profile', {
+          p_user_id: authData.user.id,
+          p_full_name: fullName.trim(),
+          p_role: 'usuario',
+          p_status: 'approved',
+          p_polo_id: poloIdValidado,
+          p_cidade: cidadePolo || null
+        });
+        
+        if (rpcError) {
+          profileError = rpcError;
+          console.warn('⚠️ Erro ao usar função RPC, tentando INSERT direto...');
+          // Se a função não existir, tentar INSERT direto
+          const { data: insertData, error: insertError } = await supabase
         .from('musicalizacao_profiles')
         .insert(profileInsert)
         .select()
         .single();
+          profileData = insertData;
+          profileError = insertError;
+        } else {
+          // Função funcionou, buscar o perfil criado
+          const createdProfile = await getProfile(authData.user.id);
+          if (createdProfile) {
+            profileData = {
+              id: createdProfile.id,
+              full_name: createdProfile.fullName,
+              role: createdProfile.role,
+              status: createdProfile.status,
+              polo_id: createdProfile.poloId,
+              cidade: createdProfile.cidade,
+            };
+          }
+        }
+        
+        // FAZER LOGOUT IMEDIATAMENTE após criar perfil para evitar login automático
+        console.log('📝 Fazendo logout IMEDIATAMENTE após criar perfil...');
+        await supabase.auth.signOut();
+        await new Promise(resolve => setTimeout(resolve, 300)); // Aguardar logout processar
+      } catch (error: any) {
+        profileError = error;
+        // Fazer logout mesmo em caso de erro
+        await supabase.auth.signOut();
+      }
 
       console.log('📦 Resultado da inserção:', { 
         hasData: !!profileData, 
@@ -528,10 +976,10 @@ export const useAuth = (): UseAuthReturn => {
         if (checkProfile) {
           console.log('✅ Perfil foi criado (provavelmente por trigger). Mantendo logado.');
           // Se há sessão, manter logado. Se não, fazer logout e pedir para confirmar email
-          if (sessionCheck?.session) {
-            setUser(authData.user);
-            setProfile(checkProfile);
-            return { user: authData.user, error: null };
+          if (sessionCheck?.data?.session) {
+          setUser(authData.user);
+          setProfile(checkProfile);
+          return { user: authData.user, error: null };
           } else {
             // Sem sessão - fazer logout e informar que precisa confirmar email
             await supabase.auth.signOut();
@@ -543,7 +991,7 @@ export const useAuth = (): UseAuthReturn => {
         }
         
         // Se não há sessão e o erro é de RLS, informar que precisa confirmar email
-        if (!sessionCheck?.session && (profileError.code === '42501' || profileError.message.includes('row-level security'))) {
+        if (!sessionCheck?.data?.session && (profileError.code === '42501' || profileError.message.includes('row-level security'))) {
           await supabase.auth.signOut();
           return { 
             user: null, 
@@ -556,7 +1004,7 @@ export const useAuth = (): UseAuthReturn => {
         if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
           return { 
             user: null, 
-            error: new Error('Erro de permissão RLS. Execute a migration 011_fix_rls_insert_signup_final.sql no Supabase SQL Editor.') 
+            error: new Error('Erro de permissão RLS. Execute a migration 013_fix_rls_insert_definitive.sql no Supabase SQL Editor.') 
           };
         }
         
@@ -582,9 +1030,9 @@ export const useAuth = (): UseAuthReturn => {
         if (checkProfile) {
           console.log('✅ Perfil existe mesmo sem retorno.');
           // Se há sessão, manter logado. Se não, fazer logout e informar
-          if (sessionCheck?.session) {
-            setUser(authData.user);
-            setProfile(checkProfile);
+          if (sessionCheck?.data?.session) {
+          setUser(authData.user);
+          setProfile(checkProfile);
             // Fazer logout mesmo assim para evitar login automático
             await supabase.auth.signOut();
             return { user: null, error: null };
@@ -606,16 +1054,13 @@ export const useAuth = (): UseAuthReturn => {
       
       console.log('✅ Perfil criado com sucesso:', profileData);
       
-      // Para novos usuários: fazer logout IMEDIATAMENTE após criar o perfil
-      // Isso evita que o AppNavigator detecte a sessão e mostre a página principal
-      console.log('📝 Conta criada com sucesso. Fazendo logout IMEDIATAMENTE para evitar login automático...');
-      
-      // IMPORTANTE: Fazer logout ANTES de qualquer outra coisa para evitar que
-      // o AppNavigator detecte a sessão e mostre a página principal
-      await supabase.auth.signOut();
-      
-      // Aguardar um pouco para garantir que o logout foi processado
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Logout já foi feito antes de criar o perfil, apenas garantir que não há sessão
+      const finalSessionCheck = await supabase.auth.getSession();
+      if (finalSessionCheck.data?.session) {
+        console.log('⚠️ Ainda há sessão após logout, fazendo logout novamente...');
+        await supabase.auth.signOut();
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       
       // NÃO setar user/profile aqui - isso faria o AppNavigator mostrar a página principal
       // Apenas retornar sucesso para o SignUpScreen exibir toast e redirecionar

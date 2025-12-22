@@ -23,13 +23,15 @@ ALTER TABLE musicalizacao_profiles
   ADD COLUMN IF NOT EXISTS cidade TEXT,
   ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected'));
 
--- 3. Atualizar constraint de role para incluir 'coordinator'
+-- 3. Atualizar constraint de role (se o enum ainda não existir, será criado na migration 007)
+-- NOTA: Se o enum musicalizacao_user_role já existir, ele já valida os valores automaticamente
+-- Esta constraint só é necessária se a coluna ainda for TEXT
+-- Remover constraint antiga se existir
 ALTER TABLE musicalizacao_profiles
   DROP CONSTRAINT IF EXISTS musicalizacao_profiles_role_check;
 
-ALTER TABLE musicalizacao_profiles
-  ADD CONSTRAINT musicalizacao_profiles_role_check 
-  CHECK (role IN ('admin', 'instructor', 'coordinator'));
+-- A constraint CHECK não é necessária se a coluna já for do tipo ENUM
+-- O enum musicalizacao_user_role já valida os valores: 'administrador', 'instrutor', 'coordenador', 'usuario'
 
 -- 4. Adicionar campo polo_id na tabela de estudantes
 ALTER TABLE musicalizacao_students
@@ -48,16 +50,21 @@ CREATE INDEX IF NOT EXISTS idx_classes_polo ON musicalizacao_classes(polo_id);
 CREATE INDEX IF NOT EXISTS idx_polos_cidade ON musicalizacao_polos(cidade);
 CREATE INDEX IF NOT EXISTS idx_polos_regional ON musicalizacao_polos(regional);
 
--- 7. Inserir polos iniciais (exemplo - ajustar conforme necessário)
-INSERT INTO musicalizacao_polos (nome, cidade, regional) VALUES
-  ('Cotia', 'Cotia', 'Itapevi'),
-  ('Caucaia do Alto', 'Caucaia do Alto', 'Itapevi'),
-  ('Fazendinha', 'Fazendinha', 'Itapevi'),
-  ('Itapevi', 'Itapevi', 'Itapevi'),
-  ('Jandira', 'Jandira', 'Itapevi'),
-  ('Pirapora', 'Pirapora', 'Itapevi'),
-  ('Vargem Grande', 'Vargem Grande', 'Itapevi')
-ON CONFLICT (nome, cidade, regional) DO NOTHING;
+-- 7. Inserir polos iniciais com IDs fixos (para compatibilidade com dados de teste)
+-- NOTA: IDs fixos são usados para garantir que as foreign keys nas migrations de seed funcionem
+-- Usa ON CONFLICT no ID (primary key) para atualizar se já existir
+INSERT INTO musicalizacao_polos (id, nome, cidade, regional) VALUES
+  ('00000000-0000-0000-0000-000000000001', 'Polo Cotia', 'Cotia', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000002', 'Polo Caucaia do Alto', 'Caucaia do Alto', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000003', 'Polo Vargem Grande Paulista', 'Vargem Grande Paulista', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000004', 'Polo Itapevi', 'Itapevi', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000005', 'Polo Jandira', 'Jandira', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000006', 'Polo Santana de Parnaíba', 'Santana de Parnaíba', 'Regional Itapevi'),
+  ('00000000-0000-0000-0000-000000000007', 'Polo Pirapora do Bom Jesus', 'Pirapora do Bom Jesus', 'Regional Itapevi')
+ON CONFLICT (id) DO UPDATE SET
+  nome = EXCLUDED.nome,
+  cidade = EXCLUDED.cidade,
+  regional = EXCLUDED.regional;
 
 -- 8. RLS Policies para polos
 ALTER TABLE musicalizacao_polos ENABLE ROW LEVEL SECURITY;
@@ -69,25 +76,14 @@ CREATE POLICY musicalizacao_polos_select_all ON musicalizacao_polos
   USING (true);
 
 -- 9. Atualizar RLS para profiles - permitir que usuários vejam seus próprios dados
+-- NOTA: Esta policy será recriada nas migrations posteriores com os valores corretos do enum
+-- Removendo para evitar conflito
 DROP POLICY IF EXISTS musicalizacao_profiles_select_own ON musicalizacao_profiles;
-CREATE POLICY musicalizacao_profiles_select_own ON musicalizacao_profiles
-  FOR SELECT
-  TO authenticated
-  USING (auth.uid() = id OR 
-         (SELECT role FROM musicalizacao_profiles WHERE id = auth.uid()) = 'admin' OR
-         (SELECT role FROM musicalizacao_profiles WHERE id = auth.uid()) = 'coordinator');
 
 -- 10. Policy para administradores atualizarem status de coordenadores
+-- NOTA: Esta policy será recriada nas migrations posteriores com os valores corretos do enum
+-- Removendo para evitar conflito
 DROP POLICY IF EXISTS musicalizacao_profiles_update_status_admin ON musicalizacao_profiles;
-CREATE POLICY musicalizacao_profiles_update_status_admin ON musicalizacao_profiles
-  FOR UPDATE
-  TO authenticated
-  USING (
-    (SELECT role FROM musicalizacao_profiles WHERE id = auth.uid()) = 'admin'
-  )
-  WITH CHECK (
-    (SELECT role FROM musicalizacao_profiles WHERE id = auth.uid()) = 'admin'
-  );
 
 -- 11. Trigger para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
