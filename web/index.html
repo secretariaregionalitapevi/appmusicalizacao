@@ -69,24 +69,38 @@
     
     /* Mobile optimizations */
     @media (max-width: 768px) {
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      
       html, body {
         width: 100%;
         height: 100%;
         overflow-x: hidden;
+        overflow-y: auto;
         position: fixed;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
       }
       
       #root {
         width: 100vw;
         height: 100vh;
         overflow-x: hidden;
+        overflow-y: auto;
         position: relative;
+        min-width: 100vw;
+        max-width: 100vw;
       }
       
       /* Prevenir zoom em inputs no iOS */
       input, textarea, select {
         font-size: 16px !important;
+      }
+      
+      /* Garantir que containers não ultrapassem a largura */
+      div[style*="flexDirection: row"] {
+        max-width: 100vw !important;
       }
     }
     

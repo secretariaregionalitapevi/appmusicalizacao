@@ -358,7 +358,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   }, [userMenuOpen, messagesOpen, notificationsOpen]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={isMobile ? ['top', 'bottom'] : ['top', 'bottom', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -524,7 +524,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         </View>
       </View>
 
-      <View style={styles.contentContainer}>
+      <View style={[
+        styles.contentContainer,
+        isMobile && styles.contentContainerMobile,
+      ]}>
         {/* Overlay para mobile - SEMPRE renderizar mas controlar visibilidade */}
         {isMobile && (
           <Animated.View
@@ -532,7 +535,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               styles.overlay,
               {
                 opacity: overlayAnimation,
-                display: sidebarOpen ? 'flex' : 'none',
                 zIndex: sidebarOpen ? 999 : -1,
               },
             ]}
@@ -553,6 +555,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <Animated.View
             style={[
               styles.sidebar,
+              styles.sidebarMobile,
               {
                 transform: [
                   {
@@ -567,6 +570,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               },
             ]}
             pointerEvents={sidebarOpen ? 'auto' : 'none'}
+            collapsable={false}
           >
             <ScrollView style={styles.sidebarScroll}>
               {menuItems.map((item, index) => {
@@ -676,19 +680,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         {/* Main Content */}
         <View style={[
           styles.mainContent,
-          isMobile && !sidebarOpen && styles.mainContentMobileFull,
-          isMobile && sidebarOpen && styles.mainContentMobileHidden,
+          isMobile && styles.mainContentMobile,
+          isMobile && sidebarOpen && styles.mainContentMobileWithSidebar,
+          !isMobile && !sidebarOpen && {
+            marginLeft: 0,
+          },
         ]}>
           <ScrollView 
-            style={styles.mainContentScroll} 
+            style={[
+              styles.mainContentScroll,
+              isMobile && styles.mainContentScrollMobile,
+            ]} 
             contentContainerStyle={[
               styles.scrollContent,
-              isMobile && {
-                paddingBottom: 20, // Espaço extra no mobile
-              }
+              isMobile && styles.scrollContentMobile,
             ]}
             showsVerticalScrollIndicator={true}
             bounces={!isWeb}
+            scrollEnabled={!isMobile || !sidebarOpen}
           >
             {showPageTitle && title && <Text style={styles.pageTitle}>{title}</Text>}
             {children}
@@ -769,6 +778,8 @@ const styles = StyleSheet.create({
       width: '100%',
       height: '100%',
       overflow: 'hidden',
+      minWidth: '100%',
+      maxWidth: '100%',
     }),
   },
   header: {
@@ -1004,6 +1015,15 @@ const styles = StyleSheet.create({
       maxWidth: '100%',
     }),
   },
+  contentContainerMobile: {
+    flexDirection: 'row',
+    position: 'relative',
+    width: '100%',
+    minWidth: '100%',
+    maxWidth: '100%',
+    alignItems: 'stretch',
+    overflow: 'hidden',
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1026,18 +1046,21 @@ const styles = StyleSheet.create({
       shadowOpacity: 0,
       shadowRadius: 0,
       elevation: 0,
-    } : {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      zIndex: 1000,
-      shadowColor: '#000',
-      shadowOffset: { width: 2, height: 0 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    }),
+    } : {}),
+  },
+  sidebarMobile: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    // Garantir que quando fechado, não interfira com o layout
+    width: 280,
   },
   sidebarScroll: {
     flex: 1,
@@ -1084,22 +1107,40 @@ const styles = StyleSheet.create({
       maxWidth: '100%',
     }),
   },
-  mainContentMobileFull: {
+  mainContentMobile: {
     width: '100%',
+    minWidth: '100%',
+    maxWidth: '100%',
+    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
     marginLeft: 0,
     paddingLeft: 0,
-    flex: 1,
-    zIndex: 1,
   },
-  mainContentMobileHidden: {
-    opacity: 0.3,
+  mainContentMobileWithSidebar: {
+    // Quando sidebar está aberto, conteúdo fica atrás mas ainda visível
+    opacity: 0.4,
     pointerEvents: 'none',
   },
   mainContentScroll: {
     flex: 1,
   },
+  mainContentScrollMobile: {
+    width: '100%',
+    minWidth: '100%',
+    maxWidth: '100%',
+  },
   scrollContent: {
     padding: isWeb ? spacing.xl : spacing.md,
+  },
+  scrollContentMobile: {
+    padding: spacing.md,
+    paddingBottom: 20,
+    minWidth: '100%',
   },
   pageTitle: {
     fontSize: 24,
