@@ -401,12 +401,15 @@ export const HomeScreen: React.FC = () => {
       return;
     }
 
+    // Timeout de segurança - se demorar mais de 10 segundos, parar o loading
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
       setLoading(true);
       console.log('🔄 Iniciando carregamento de dados do dashboard...');
 
       // Timeout de segurança - se demorar mais de 10 segundos, parar o loading
-      let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         console.warn('⏱️ Timeout no carregamento de dados - desativando loading');
         setLoading(false);
         timeoutId = null;
