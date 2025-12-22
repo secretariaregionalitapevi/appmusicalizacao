@@ -240,16 +240,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       
       // Se mudou de desktop para mobile, fechar o menu
       if (!previousMobile && currentMobile) {
-        setSidebarOpen(false);
-        sidebarAnimation.setValue(0);
-        overlayAnimation.setValue(0);
+      setSidebarOpen(false);
+      sidebarAnimation.setValue(0);
+      overlayAnimation.setValue(0);
       }
       // Se mudou de mobile para desktop, abrir o menu
       if (previousMobile && !currentMobile) {
-        setSidebarOpen(true);
-        sidebarAnimation.setValue(1);
-        overlayAnimation.setValue(0);
-      }
+      setSidebarOpen(true);
+      sidebarAnimation.setValue(1);
+      overlayAnimation.setValue(0);
+    }
     };
 
     const subscription = Dimensions.addEventListener('change', updateLayout);
@@ -403,22 +403,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               <Ionicons name="menu" size={24} color="#1F2937" />
             </View>
           ) : (
-            <TouchableOpacity
+          <TouchableOpacity
               onPress={() => {
                 setSidebarOpen(!sidebarOpen);
               }}
-              style={styles.menuButton}
+            style={styles.menuButton}
               activeOpacity={0.7}
-            >
-              <Ionicons name="menu" size={24} color="#1F2937" />
-            </TouchableOpacity>
+          >
+            <Ionicons name="menu" size={24} color="#1F2937" />
+          </TouchableOpacity>
           )}
           {(!isMobile && sidebarOpen) || isMobile ? (
-            <Image 
-              source={require('../../img/logo-ccb-light.png')} 
-              style={styles.logo} 
-              resizeMode="contain" 
-            />
+          <Image 
+            source={require('../../img/logo-ccb-light.png')} 
+            style={styles.logo} 
+            resizeMode="contain" 
+          />
           ) : null}
         </View>
         <View style={styles.headerRight}>
@@ -444,7 +444,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   <Text style={styles.badgeText}>{messagesCount}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+          </TouchableOpacity>
             
             {/* Messages Dropdown */}
             {messagesOpen && (
@@ -491,13 +491,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 setUserMenuOpen(false);
               }}
             >
-              <Ionicons name="notifications-outline" size={22} color="#6B7280" />
+            <Ionicons name="notifications-outline" size={22} color="#6B7280" />
               {notificationsCount > 0 && (
                 <View style={[styles.badge, styles.badgeRed]}>
                   <Text style={styles.badgeText}>{notificationsCount}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+          </TouchableOpacity>
             
             {/* Notifications Dropdown */}
             {notificationsOpen && (
@@ -523,7 +523,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                           </Text>
                           <Text style={styles.dropdownItemTime}>{notification.time}</Text>
                         </View>
-                      </TouchableOpacity>
+          </TouchableOpacity>
                     ))}
                   </View>
                   <TouchableOpacity style={styles.dropdownFooter}>
@@ -575,52 +575,52 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Sidebar */}
         {isMobile ? (
-          <Animated.View
-            style={[
-              styles.sidebar,
+        <Animated.View
+          style={[
+            styles.sidebar,
               styles.sidebarMobile,
               {
-                transform: [
-                  {
-                    translateX: sidebarAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-280, 0],
-                    }),
-                  },
-                ],
-                width: 280,
+                  transform: [
+                    {
+                      translateX: sidebarAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-280, 0],
+                      }),
+                    },
+                  ],
+                  width: 280,
                 zIndex: sidebarOpen ? 1000 : -1,
-              },
-            ]}
+                },
+          ]}
             pointerEvents={sidebarOpen ? 'auto' : 'none'}
             collapsable={false}
-          >
-            <ScrollView style={styles.sidebarScroll}>
-              {menuItems.map((item, index) => {
-                const isActive = item.screen === currentScreen;
-                
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.menuItem, isActive && styles.menuItemActive]}
-                    onPress={() => handleMenuPress(item)}
-                  >
-                    <View style={styles.menuItemContent}>
-                      {getIcon(item.icon, isActive)}
-                      <Text
-                        style={[
-                          styles.menuItemText,
-                          isActive && styles.menuItemTextActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Animated.View>
+        >
+          <ScrollView style={styles.sidebarScroll}>
+            {menuItems.map((item, index) => {
+              const isActive = item.screen === currentScreen;
+              
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.menuItem, isActive && styles.menuItemActive]}
+                  onPress={() => handleMenuPress(item)}
+                >
+                  <View style={styles.menuItemContent}>
+                    {getIcon(item.icon, isActive)}
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isActive && styles.menuItemTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
         ) : (
           <Animated.View
             style={[
@@ -1206,6 +1206,8 @@ const styles = StyleSheet.create({
     minWidth: '100%',
     maxWidth: '100%',
     flexGrow: 1,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.md,
   },
   pageTitle: {
     fontSize: 24,
