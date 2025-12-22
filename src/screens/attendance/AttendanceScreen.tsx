@@ -2,6 +2,7 @@
  * Tela de Registro de Presença
  */
 import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { AdminLayout, EmptyState, DashboardCard } from '@/components/common';
 import { View, Text, StyleSheet } from 'react-native';
@@ -31,7 +32,16 @@ export const AttendanceScreen: React.FC = () => {
   const [pendingClasses, setPendingClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Registro de Presença | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Registro de Presença | CCB';

@@ -17,7 +17,7 @@ import {
   Linking,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,7 +43,16 @@ export const LoginScreen: React.FC = () => {
 
   const { login } = useAuth();
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Login | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Login | CCB';

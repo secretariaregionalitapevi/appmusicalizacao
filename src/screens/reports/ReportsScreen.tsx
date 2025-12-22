@@ -2,6 +2,7 @@
  * Tela de relatórios
  */
 import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { AdminLayout, EmptyState, DashboardCard } from '@/components/common';
 import { supabase } from '@/api/supabase';
@@ -36,7 +37,16 @@ export const ReportsScreen: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Relatórios | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Relatórios | CCB';

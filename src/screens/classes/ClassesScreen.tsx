@@ -2,6 +2,7 @@
  * Tela de gerenciamento de aulas - Dashboard Administrativo Profissional
  */
 import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -55,7 +56,16 @@ export const ClassesScreen: React.FC = () => {
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilter[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Aulas | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Aulas | CCB';

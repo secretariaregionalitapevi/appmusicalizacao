@@ -177,13 +177,23 @@ export const AppNavigator: React.FC = () => {
       const authStateChangeResult = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!isMounted) return;
         
-        // Ignorar eventos de SIGNED_OUT durante signup (evita flash da página principal)
+        // Processar eventos de SIGNED_OUT
         if (event === 'SIGNED_OUT') {
+          console.log('🚪 Evento SIGNED_OUT recebido. Desautenticando usuário...');
           setIsAuthenticated(false);
+          // Verificar novamente após um pequeno delay para garantir
+          setTimeout(async () => {
+            const { data: { session: checkSession } } = await supabase.auth.getSession();
+            if (!checkSession && isMounted) {
+              console.log('✅ Confirmado: nenhuma sessão ativa após logout');
+              setIsAuthenticated(false);
+            }
+          }, 200);
           return;
         }
         
         if (!session) {
+          console.log('🚪 Nenhuma sessão encontrada. Desautenticando usuário...');
           setIsAuthenticated(false);
           return;
         }
@@ -198,7 +208,30 @@ export const AppNavigator: React.FC = () => {
           return;
         }
 
-        // Para outros eventos (SIGNED_IN, TOKEN_REFRESHED), verificar normalmente
+        // IMPORTANTE: Se o evento for SIGNED_IN, verificar se a sessão ainda existe
+        // (pode ter sido logout do signup antes do evento chegar)
+        if (event === 'SIGNED_IN') {
+          console.log('📝 Evento SIGNED_IN recebido. Verificando sessão...');
+          
+          // Aguardar um pouco para dar tempo do signup fazer logout se necessário
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Verificar se ainda há sessão (pode ter sido logout do signup)
+          const { data: { session: checkSession } } = await supabase.auth.getSession();
+          if (!checkSession) {
+            console.log('✅ Sessão não encontrada após SIGNED_IN - provavelmente foi logout do signup');
+            setIsAuthenticated(false);
+            return;
+          }
+          
+          // Se ainda há sessão, verificar perfil normalmente
+          console.log('✅ Sessão ainda ativa. Verificando perfil...');
+          verifyProfileAndSetAuth(checkSession.user.id, false);
+          setIsAuthenticated(true);
+          return;
+        }
+
+        // Para outros eventos (TOKEN_REFRESHED), verificar normalmente
         verifyProfileAndSetAuth(session.user.id, false);
         setIsAuthenticated(true);
       });

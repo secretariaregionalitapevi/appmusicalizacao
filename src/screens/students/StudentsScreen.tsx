@@ -2,6 +2,7 @@
  * Tela de listagem de alunos
  */
 import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AdminLayout, EmptyState, DashboardCard, Button } from '@/components/common';
@@ -16,7 +17,16 @@ export const StudentsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Alunos | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Alunos | CCB';

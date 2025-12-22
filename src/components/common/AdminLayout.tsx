@@ -331,7 +331,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   // Fechar sidebar ao clicar no overlay (mobile)
   const handleOverlayPress = () => {
-    if (isMobile) {
+    if (isMobile && sidebarOpen) {
       setSidebarOpen(false);
     }
   };
@@ -358,7 +358,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   }, [userMenuOpen, messagesOpen, notificationsOpen]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -525,13 +525,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       </View>
 
       <View style={styles.contentContainer}>
-        {/* Overlay para mobile */}
-        {isMobile && sidebarOpen && (
+        {/* Overlay para mobile - SEMPRE renderizar mas controlar visibilidade */}
+        {isMobile && (
           <Animated.View
             style={[
               styles.overlay,
               {
                 opacity: overlayAnimation,
+                display: sidebarOpen ? 'flex' : 'none',
+                zIndex: sidebarOpen ? 999 : -1,
               },
             ]}
             pointerEvents={sidebarOpen ? 'auto' : 'none'}
@@ -540,6 +542,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={handleOverlayPress}
+              accessible={true}
+              accessibilityLabel="Fechar menu"
             />
           </Animated.View>
         )}
@@ -559,8 +563,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   },
                 ],
                 width: 280,
+                zIndex: sidebarOpen ? 1000 : -1,
               },
             ]}
+            pointerEvents={sidebarOpen ? 'auto' : 'none'}
           >
             <ScrollView style={styles.sidebarScroll}>
               {menuItems.map((item, index) => {
@@ -668,8 +674,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         )}
 
         {/* Main Content */}
-        <View style={styles.mainContent}>
-          <ScrollView style={styles.mainContentScroll} contentContainerStyle={styles.scrollContent}>
+        <View style={[
+          styles.mainContent,
+          isMobile && {
+            width: '100%',
+            marginLeft: 0,
+          }
+        ]}>
+          <ScrollView 
+            style={styles.mainContentScroll} 
+            contentContainerStyle={[
+              styles.scrollContent,
+              isMobile && {
+                paddingBottom: 20, // Espaço extra no mobile
+              }
+            ]}
+            showsVerticalScrollIndicator={true}
+            bounces={!isWeb}
+          >
             {showPageTitle && title && <Text style={styles.pageTitle}>{title}</Text>}
             {children}
           </ScrollView>
@@ -745,6 +767,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+    ...(isWeb ? {} : {
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+    }),
   },
   header: {
     flexDirection: 'row',
@@ -756,6 +783,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
     position: 'relative',
     zIndex: 1000,
+    width: '100%',
     ...(isWeb && {
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
       overflow: 'visible',
@@ -766,6 +794,8 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.1,
       shadowRadius: 3.84,
       elevation: 3,
+      minWidth: '100%',
+      maxWidth: '100%',
     }),
   },
   headerLeft: {
@@ -969,25 +999,26 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     position: 'relative',
+    ...(isWeb ? {} : {
+      width: '100%',
+      overflow: 'hidden',
+    }),
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 999,
+    ...(isWeb ? {} : {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    }),
   },
   sidebar: {
     backgroundColor: '#F3F4F6',
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    ...(isWeb && {
+    ...(isWeb ? {
       position: 'relative',
       zIndex: 1,
       shadowColor: 'transparent',
@@ -995,6 +1026,17 @@ const styles = StyleSheet.create({
       shadowOpacity: 0,
       shadowRadius: 0,
       elevation: 0,
+    } : {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      zIndex: 1000,
+      shadowColor: '#000',
+      shadowOffset: { width: 2, height: 0 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
     }),
   },
   sidebarScroll: {
@@ -1036,7 +1078,11 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    ...(isWeb ? {} : { width: '100%' }),
+    ...(isWeb ? {} : { 
+      width: '100%',
+      minWidth: '100%',
+      maxWidth: '100%',
+    }),
   },
   mainContentScroll: {
     flex: 1,

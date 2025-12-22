@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Musicalização Infantil | CCB</title>
+  <title>CCB | Musicalização Infantil</title>
       <link rel="icon" type="image/png" href="/assets/favicon.png" />
       <!-- SweetAlert2 CSS -->
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -63,6 +63,44 @@
     #root {
       width: 100%;
       height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        position: fixed;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      #root {
+        width: 100vw;
+        height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+      }
+      
+      /* Prevenir zoom em inputs no iOS */
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+    }
+    
+    /* Prevenir scroll horizontal em todos os dispositivos */
+    * {
+      max-width: 100%;
+    }
+    
+    /* Ajustes para SafeArea no iOS */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
     }
     /* Custom SweetAlert2 styles for compact and elegant toasts/modals */
     .swal2-toast {

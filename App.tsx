@@ -1,12 +1,12 @@
 /**
  * Componente principal do aplicativo
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, useNavigationContainerRef } from '@react-navigation/native';
 import { colors } from '@/theme';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { ErrorBoundary, RoutePreserver } from '@/components/common';
@@ -64,12 +64,33 @@ const linking: LinkingOptions<any> = Platform.OS === 'web' ? {
 } : {};
 
 export default function App() {
+  const navigationRef = useNavigationContainerRef();
+
+  // Definir título padrão quando o app carrega
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      // Definir título padrão imediatamente
+      if (!document.title || document.title === 'undefined') {
+        document.title = 'CCB | Musicalização Infantil';
+      }
+      
+      // Verificar periodicamente se o título está undefined (fallback)
+      const checkTitle = setInterval(() => {
+        if (!document.title || document.title === 'undefined') {
+          document.title = 'CCB | Musicalização Infantil';
+        }
+      }, 1000);
+
+      return () => clearInterval(checkTitle);
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
         <ThemeProvider>
           <PaperProvider theme={paperTheme}>
-            <NavigationContainer linking={linking}>
+            <NavigationContainer ref={navigationRef} linking={linking}>
               <AppNavigator />
               <RoutePreserver />
             </NavigationContainer>

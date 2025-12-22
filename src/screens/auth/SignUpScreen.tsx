@@ -16,7 +16,7 @@ import {
   Image,
   Linking,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FontAwesome5, FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,7 +48,16 @@ export const SignUpScreen: React.FC = () => {
   const [polos, setPolos] = useState<Polo[]>([]);
   const [poloSelecionado, setPoloSelecionado] = useState<string>('');
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Cadastro | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Cadastro | CCB';

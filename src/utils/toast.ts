@@ -16,12 +16,19 @@ const getSwal = (): any => {
     return null;
   }
 
-  // Usar Swal do window (carregado via CDN no index.html)
+  // Primeiro tentar usar Swal do window (carregado via CDN no index.html)
   if ((window as any).Swal && typeof (window as any).Swal.fire === 'function') {
     return (window as any).Swal;
   }
-  
-  return null;
+
+  // Fallback: tentar importar SweetAlert2 (como no APPNEW)
+  try {
+    const sweetalert2 = require('sweetalert2');
+    return sweetalert2.default || sweetalert2;
+  } catch (error) {
+    console.warn('SweetAlert2 não disponível:', error);
+    return null;
+  }
 };
 
 // Carregar estilos customizados do SweetAlert2 (CSS já está no index.html)
@@ -173,25 +180,28 @@ export const showToast = {
     const finalMessage = message ? `${title} ${message}` : title;
     
     if (Platform.OS === 'web') {
-      // 🚀 MELHORIA: Toast de sucesso ultra-compacto (uma linha)
+      // 🚀 MODELO APPNEW: Toast de sucesso com cores e configurações específicas
       const Swal = getSwal();
       if (Swal) {
+        const config = {
+          toast: true,
+          position: 'top-end' as const,
+          showConfirmButton: false,
+          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
+          timerProgressBar: true, // Modelo APPNEW usa progressBar
+          didOpen: (toast: any) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+          }
+        };
+
         Swal.fire({
+          ...config,
           icon: 'success',
           title: finalMessage,
-          text: '', // Sempre vazio para manter compacto
-          timer: 1500,
-          timerProgressBar: false,
-          showConfirmButton: false,
-          toast: true,
-          position: 'top-end',
-          width: 'auto',
-          padding: '0.625rem 0.875rem',
-          customClass: {
-            popup: 'swal2-toast',
-            title: 'swal2-toast-title',
-            content: 'swal2-toast-content',
-          },
+          background: '#f0f9ff', // Cor de fundo do modelo APPNEW
+          color: '#059669', // Cor do texto (verde)
+          iconColor: '#059669' // Cor do ícone (verde)
         });
       } else {
         console.log(`✅ ${finalMessage}`);
@@ -231,13 +241,26 @@ export const showToast = {
     if (Platform.OS === 'web') {
       const Swal = getSwal();
       if (Swal) {
-        // Usar SweetAlert2 padrão (https://sweetalert2.github.io/)
+        // 🚀 MODELO APPNEW: Toast de erro com cores específicas
+        const config = {
+          toast: true,
+          position: 'top-end' as const,
+          showConfirmButton: false,
+          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
+          timerProgressBar: true,
+          didOpen: (toast: any) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+          }
+        };
+
         Swal.fire({
+          ...config,
           icon: 'error',
-          title: title,
-          text: message || '',
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#dc2626',
+          title: message ? `${title} ${message}` : title,
+          background: '#fef2f2', // Cor de fundo vermelho claro (modelo APPNEW)
+          color: '#dc2626', // Cor do texto (vermelho)
+          iconColor: '#dc2626' // Cor do ícone (vermelho)
         });
       } else {
         // Fallback para alert nativo
@@ -273,25 +296,28 @@ export const showToast = {
 
   info: (title: string, message?: string) => {
     if (Platform.OS === 'web') {
-      // 🚀 MELHORIA: Toast de info compacto
+      // 🚀 MODELO APPNEW: Toast de info com cores específicas
       const Swal = getSwal();
       if (Swal) {
-        Swal.fire({
-          icon: 'info',
-          title: title,
-          text: message || '',
-          timer: 3000,
-          timerProgressBar: false,
-          showConfirmButton: false,
+        const config = {
           toast: true,
-          position: 'top-end',
-          width: 'auto',
-          padding: '0.75rem 1rem',
-          customClass: {
-            popup: 'swal2-toast',
-            title: 'swal2-toast-title',
-            content: 'swal2-toast-content',
-          },
+          position: 'top-end' as const,
+          showConfirmButton: false,
+          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
+          timerProgressBar: true,
+          didOpen: (toast: any) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+          }
+        };
+
+        Swal.fire({
+          ...config,
+          icon: 'info',
+          title: message ? `${title} ${message}` : title,
+          background: '#eff6ff', // Cor de fundo azul claro (modelo APPNEW)
+          color: '#1e40af', // Cor do texto (azul)
+          iconColor: '#1e40af' // Cor do ícone (azul)
         });
       } else {
         // Fallback para console
@@ -324,27 +350,28 @@ export const showToast = {
 
   warning: (title: string, message?: string) => {
     if (Platform.OS === 'web') {
-      // 🚀 MELHORIA: Toast de warning compacto
+      // 🚀 MODELO APPNEW: Toast de warning com cores específicas
       const Swal = getSwal();
       if (Swal) {
-        Swal.fire({
-          icon: 'warning',
-          title: title,
-          text: message || '',
-          timer: 4000,
+        const config = {
+          toast: true,
+          position: 'top-end' as const,
+          showConfirmButton: false,
+          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
           timerProgressBar: true,
-          showConfirmButton: true,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#f59e0b',
-          toast: false, // Modal para warnings importantes
-          position: 'center',
-          padding: '1.5rem',
-          customClass: {
-            popup: 'swal2-popup-compact',
-            title: 'swal2-title-compact',
-            content: 'swal2-content-compact',
-            confirmButton: 'swal2-confirm-compact',
-          },
+          didOpen: (toast: any) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+          }
+        };
+
+        Swal.fire({
+          ...config,
+          icon: 'warning',
+          title: message ? `${title} ${message}` : title,
+          background: '#fffbeb', // Cor de fundo amarelo claro (modelo APPNEW)
+          color: '#d97706', // Cor do texto (laranja)
+          iconColor: '#d97706' // Cor do ícone (laranja)
         });
       } else {
         // Fallback para console

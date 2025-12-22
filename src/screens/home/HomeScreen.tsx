@@ -2,6 +2,7 @@
  * Tela inicial do aplicativo - Dashboard estilo MBX Academy
  */
 import React, { useState, useRef, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -340,10 +341,19 @@ export const HomeScreen: React.FC = () => {
   const [studentsWithConsecutiveAbsences, setStudentsWithConsecutiveAbsences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Definir título da página na web
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Dashboard | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      document.title = 'Musicalização Infantil | CCB';
+      document.title = 'Dashboard | CCB';
     }
   }, []);
 

@@ -2,6 +2,7 @@
  * Tela de Calendário - Visualização de Aulas e Eventos
  */
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -34,6 +35,16 @@ export const CalendarScreen: React.FC = () => {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Calendário | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Calendário | CCB';

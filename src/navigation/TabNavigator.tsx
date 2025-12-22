@@ -61,6 +61,24 @@ export const TabNavigator: React.FC = () => {
   });
   const hasNavigatedRef = useRef(false);
 
+  // Atualizar título da página quando a rota muda
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && currentRoute) {
+      const titles: Record<string, string> = {
+        Home: 'Dashboard | CCB',
+        Calendar: 'Calendário | CCB',
+        Classes: 'Aulas | CCB',
+        Students: 'Alunos | CCB',
+        Attendance: 'Registro de Presença | CCB',
+        Reports: 'Relatórios | CCB',
+        Profile: 'Meu Perfil | CCB',
+      };
+      
+      const title = titles[currentRoute] || 'Musicalização Infantil | CCB';
+      document.title = title;
+    }
+  }, [currentRoute]);
+
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       // Aguardar um pouco para garantir que o navigator está pronto

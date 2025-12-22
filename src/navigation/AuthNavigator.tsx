@@ -17,8 +17,16 @@ export const AuthNavigator: React.FC = () => {
         animation: 'fade',
       }}
     >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen 
+        name="Login" 
+        component={LoginScreen}
+        options={{ title: 'Login | CCB' }}
+      />
+      <Stack.Screen 
+        name="SignUp" 
+        component={SignUpScreen}
+        options={{ title: 'Cadastro | CCB' }}
+      />
     </Stack.Navigator>
   );
 };

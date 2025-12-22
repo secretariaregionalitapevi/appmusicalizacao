@@ -2,6 +2,7 @@
  * Tela de Perfil do Usuário - Edição de Dados com Abas
  */
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -52,6 +53,16 @@ export const ProfileScreen: React.FC = () => {
     receiveExternalPromotions: false,
   });
 
+  // Definir título da página na web quando a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.title = 'Meu Perfil | CCB';
+      }
+    }, [])
+  );
+
+  // Também definir no mount para garantir
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.title = 'Meu Perfil | CCB';
