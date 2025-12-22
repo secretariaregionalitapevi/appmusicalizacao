@@ -100,3 +100,6 @@ Se o campo não aparecer após executar a migration:
 
 **Importante:** Esta migration é idempotente e pode ser executada múltiplas vezes sem problemas.
 
+
+
+
