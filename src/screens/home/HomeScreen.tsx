@@ -395,8 +395,26 @@ export const HomeScreen: React.FC = () => {
 
   // Função para carregar dados do dashboard
   const loadDashboardData = useCallback(async () => {
+    if (!profile) {
+      console.log('⚠️ Perfil não disponível, pulando carregamento de dados');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('🔄 Iniciando carregamento de dados do dashboard...');
+
+      // Verificar sessão antes de fazer requisições
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error('❌ Erro de sessão:', sessionError);
+        console.error('❌ Sessão não disponível, não é possível carregar dados');
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ Sessão válida, buscando dados...');
 
       // Buscar estatísticas de alunos
         const { data: studentsData, error: studentsError } = await supabase
@@ -689,11 +707,19 @@ export const HomeScreen: React.FC = () => {
           setStudentsWithConsecutiveAbsences([]);
         }
     } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
-    } finally {
+      console.error('❌ Erro ao carregar dados do dashboard:', error);
+      if (error instanceof Error) {
+        console.error('❌ Mensagem:', error.message);
+        console.error('❌ Stack:', error.stack);
+      }
+      // Garantir que o loading seja desativado mesmo em caso de erro
       setLoading(false);
+    } finally {
+      // Garantir que o loading sempre seja desativado
+      setLoading(false);
+      console.log('✅ Carregamento de dados finalizado');
     }
-  }, []);
+  }, [profile]);
 
   // Carregar dados quando o perfil estiver disponível
   useEffect(() => {
