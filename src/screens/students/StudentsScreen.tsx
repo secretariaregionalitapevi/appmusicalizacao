@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AdminLayout, EmptyState, DashboardCard, Button } from '@/components/common';
 import { supabase } from '@/api/supabase';
@@ -16,6 +16,21 @@ export const StudentsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const isMobile = screenWidth < 768;
+
+  // Detectar mudanças no tamanho da tela
+  useEffect(() => {
+    const updateLayout = ({ window }: { window: { width: number } }) => {
+      setScreenWidth(window.width);
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateLayout);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   // Definir título da página na web quando a tela recebe foco
   useFocusEffect(
@@ -152,8 +167,8 @@ export const StudentsScreen: React.FC = () => {
 
       {/* Cards de Dashboard */}
       <View style={styles.dashboardCards}>
-        <View style={styles.dashboardCardsRow}>
-          <View style={styles.dashboardCardContainer}>
+        <View style={[styles.dashboardCardsRow, isMobile && styles.dashboardCardsRowMobile]}>
+          <View style={[styles.dashboardCardContainer, isMobile && styles.dashboardCardContainerMobile]}>
             <DashboardCard
               title="Total de Alunos"
               icon="people"
@@ -163,7 +178,7 @@ export const StudentsScreen: React.FC = () => {
               statusType="info"
             />
           </View>
-          <View style={styles.dashboardCardContainer}>
+          <View style={[styles.dashboardCardContainer, isMobile && styles.dashboardCardContainerMobile]}>
             <DashboardCard
               title="Alunos Ativos"
               icon="checkmark-circle"
@@ -304,12 +319,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   dashboardCardsRow: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    flexDirection: 'row',
     gap: spacing.lg,
     marginBottom: spacing.lg,
+    width: '100%',
+    flexWrap: 'wrap',
+  },
+  dashboardCardsRowMobile: {
+    flexDirection: 'column',
+    gap: spacing.md,
   },
   dashboardCardContainer: {
-    flex: Platform.OS === 'web' ? 1 : 1,
+    flex: 1,
+    minWidth: 280,
+    maxWidth: '100%',
+  },
+  dashboardCardContainerMobile: {
+    flex: 0,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   loadingContainer: {
     padding: spacing.xl,

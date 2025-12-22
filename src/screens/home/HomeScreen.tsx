@@ -734,10 +734,10 @@ export const HomeScreen: React.FC = () => {
           <View style={[styles.metricsRow, isMobile && styles.metricsRowMobile]}>
             <View style={[styles.metricCard, isMobile && styles.metricCardMobile]}>
               <View style={styles.metricCardHeader}>
-                <Text style={styles.metricCardTitle}>TOTAL DE ALUNOS</Text>
-                <Ionicons name="people" size={24} color="#033D60" />
+                <Text style={[styles.metricCardTitle, isMobile && styles.metricCardTitleMobile]}>TOTAL DE ALUNOS</Text>
+                <Ionicons name="people" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={styles.metricCardValue}>{stats.totalStudents}</Text>
+              <Text style={[styles.metricCardValue, isMobile && styles.metricCardValueMobile]}>{stats.totalStudents}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.activeStudents} ativos
@@ -751,12 +751,12 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.metricCard}>
+            <View style={[styles.metricCard, isMobile && styles.metricCardMobile]}>
               <View style={styles.metricCardHeader}>
-                <Text style={styles.metricCardTitle}>TAXA DE PRESENÇA</Text>
-                <Ionicons name="checkmark-circle" size={24} color="#033D60" />
+                <Text style={[styles.metricCardTitle, isMobile && styles.metricCardTitleMobile]}>TAXA DE PRESENÇA</Text>
+                <Ionicons name="checkmark-circle" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={styles.metricCardValue}>{stats.attendanceRate.toFixed(1)}%</Text>
+              <Text style={[styles.metricCardValue, isMobile && styles.metricCardValueMobile]}>{stats.attendanceRate.toFixed(1)}%</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.totalAttendance} registros
@@ -784,12 +784,12 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.metricCard}>
+            <View style={[styles.metricCard, isMobile && styles.metricCardMobile]}>
               <View style={styles.metricCardHeader}>
-                <Text style={styles.metricCardTitle}>AULAS AGENDADAS</Text>
-                <Ionicons name="calendar" size={24} color="#033D60" />
+                <Text style={[styles.metricCardTitle, isMobile && styles.metricCardTitleMobile]}>AULAS AGENDADAS</Text>
+                <Ionicons name="calendar" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={styles.metricCardValue}>{stats.upcomingClasses}</Text>
+              <Text style={[styles.metricCardValue, isMobile && styles.metricCardValueMobile]}>{stats.upcomingClasses}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
@@ -817,12 +817,12 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.metricCard}>
+            <View style={[styles.metricCard, isMobile && styles.metricCardMobile]}>
               <View style={styles.metricCardHeader}>
-                <Text style={styles.metricCardTitle}>TOTAL DE AULAS</Text>
-                <Ionicons name="book" size={24} color="#033D60" />
+                <Text style={[styles.metricCardTitle, isMobile && styles.metricCardTitleMobile]}>TOTAL DE AULAS</Text>
+                <Ionicons name="book" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={styles.metricCardValue}>{stats.totalClasses}</Text>
+              <Text style={[styles.metricCardValue, isMobile && styles.metricCardValueMobile]}>{stats.totalClasses}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
@@ -1407,12 +1407,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     flexShrink: 1,
   },
+  metricCardTitleMobile: {
+    fontSize: 11,
+  },
   metricCardValue: {
     fontSize: isWeb ? 36 : 28,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: spacing.md,
     marginTop: spacing.xs,
+  },
+  metricCardValueMobile: {
+    fontSize: 24,
   },
   metricCardFooter: {
     flexDirection: 'row',

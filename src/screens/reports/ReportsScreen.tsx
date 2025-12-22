@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView, TouchableOpacity, Modal, Dimensions } from 'react-native';
 import { AdminLayout, EmptyState, DashboardCard } from '@/components/common';
 import { supabase } from '@/api/supabase';
 import { spacing } from '@/theme';
@@ -36,6 +36,21 @@ export const ReportsScreen: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const isMobile = screenWidth < 768;
+
+  // Detectar mudanças no tamanho da tela
+  useEffect(() => {
+    const updateLayout = ({ window }: { window: { width: number } }) => {
+      setScreenWidth(window.width);
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateLayout);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   // Definir título da página na web quando a tela recebe foco
   useFocusEffect(
@@ -219,8 +234,8 @@ export const ReportsScreen: React.FC = () => {
 
       {/* Cards de Dashboard */}
       <View style={styles.dashboardCards}>
-        <View style={styles.dashboardCardsRow}>
-          <View style={styles.dashboardCardContainer}>
+        <View style={[styles.dashboardCardsRow, isMobile && styles.dashboardCardsRowMobile]}>
+          <View style={[styles.dashboardCardContainer, isMobile && styles.dashboardCardContainerMobile]}>
             <DashboardCard
               title="Relatórios Gerados"
               icon="document-text"
@@ -230,7 +245,7 @@ export const ReportsScreen: React.FC = () => {
               statusType="info"
             />
           </View>
-          <View style={styles.dashboardCardContainer}>
+          <View style={[styles.dashboardCardContainer, isMobile && styles.dashboardCardContainerMobile]}>
             <DashboardCard
               title="Relatórios de Presença"
               icon="checkmark-circle"
@@ -319,12 +334,31 @@ export const ReportsScreen: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderTop}>
-              <View style={styles.modalHeaderLeft}>
+            <View style={[
+              styles.modalHeaderTop,
+              isMobile && {
+                flexDirection: 'column',
+                alignItems: 'stretch',
+              }
+            ]}>
+              <View style={[
+                styles.modalHeaderLeft,
+                isMobile && {
+                  flex: 0,
+                  width: '100%',
+                }
+              ]}>
                 <Text style={styles.modalTitle}>{selectedReport?.title || 'Relatório'}</Text>
                 <Text style={styles.modalSubtitle}>header small text goes here...</Text>
               </View>
-              <View style={styles.modalHeaderRight}>
+              <View style={[
+                styles.modalHeaderRight,
+                isMobile && {
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  width: '100%',
+                }
+              ]}>
                 {Platform.OS === 'web' && (
                   <>
                     <TouchableOpacity
@@ -427,23 +461,33 @@ export const ReportsScreen: React.FC = () => {
                 {reportData.type === 'attendance' && (
                   <View style={styles.reportBody}>
                     <View style={styles.tableContainer}>
-                      <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellStudent]}>Aluno</Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellClass]}>Aula</Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellDate]}>Data</Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellStatus]}>Status</Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellNotes]}>Observações</Text>
+                      <View style={[
+                        styles.tableHeader,
+                        isMobile && {
+                          flexDirection: 'column',
+                        }
+                      ]}>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellStudent, isMobile && { width: '100%' }]}>Aluno</Text>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellClass, isMobile && { width: '100%' }]}>Aula</Text>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellDate, isMobile && { width: '100%' }]}>Data</Text>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellStatus, isMobile && { width: '100%' }]}>Status</Text>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellNotes, isMobile && { width: '100%' }]}>Observações</Text>
                       </View>
                       {reportData.data && reportData.data.length > 0 ? (
                         reportData.data.map((item: AttendanceData, index: number) => (
-                          <View key={index} style={styles.tableRow}>
-                            <Text style={[styles.tableCell, styles.tableCellStudent]}>
+                          <View key={index} style={[
+                            styles.tableRow,
+                            isMobile && {
+                              flexDirection: 'column',
+                            }
+                          ]}>
+                            <Text style={[styles.tableCell, styles.tableCellStudent, isMobile && { width: '100%' }]}>
                               {item.student_name}
                             </Text>
-                            <Text style={[styles.tableCell, styles.tableCellClass]}>
+                            <Text style={[styles.tableCell, styles.tableCellClass, isMobile && { width: '100%' }]}>
                               {item.class_title}
                             </Text>
-                            <Text style={[styles.tableCell, styles.tableCellDate]}>
+                            <Text style={[styles.tableCell, styles.tableCellDate, isMobile && { width: '100%' }]}>
                               {formatDate(item.class_date)}
                             </Text>
                             <Text
@@ -451,11 +495,12 @@ export const ReportsScreen: React.FC = () => {
                                 styles.tableCell,
                                 styles.tableCellStatus,
                                 { color: item.is_present ? '#10B981' : '#ed5565' },
+                                isMobile && { width: '100%' },
                               ]}
                             >
                               {item.is_present ? 'Presente' : 'Falta'}
                             </Text>
-                            <Text style={[styles.tableCell, styles.tableCellNotes]}>
+                            <Text style={[styles.tableCell, styles.tableCellNotes, isMobile && { width: '100%' }]}>
                               {item.notes || '-'}
                             </Text>
                           </View>
@@ -497,7 +542,12 @@ export const ReportsScreen: React.FC = () => {
                 {reportData.type === 'administrative' && (
                   <View style={styles.reportBody}>
                     <Text style={styles.reportSectionTitle}>Resumo Administrativo</Text>
-                    <View style={styles.summaryCards}>
+                    <View style={[
+                      styles.summaryCards,
+                      isMobile && {
+                        flexDirection: 'column',
+                      }
+                    ]}>
                       <View style={styles.summaryCard}>
                         <Text style={styles.summaryCardTitle}>Total de Alunos</Text>
                         <Text style={styles.summaryCardValue}>
@@ -526,12 +576,17 @@ export const ReportsScreen: React.FC = () => {
                   <View style={styles.reportBody}>
                     <Text style={styles.reportSectionTitle}>Progresso dos Alunos</Text>
                     <View style={styles.tableContainer}>
-                      <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellStudent]}>Aluno</Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellProgress]}>
+                      <View style={[
+                        styles.tableHeader,
+                        isMobile && {
+                          flexDirection: 'column',
+                        }
+                      ]}>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellStudent, isMobile && { width: '100%' }]}>Aluno</Text>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellProgress, isMobile && { width: '100%' }]}>
                           Aulas Participadas
                         </Text>
-                        <Text style={[styles.tableHeaderCell, styles.tableCellProgress]}>
+                        <Text style={[styles.tableHeaderCell, styles.tableCellProgress, isMobile && { width: '100%' }]}>
                           Taxa de Presença
                         </Text>
                       </View>
@@ -547,14 +602,19 @@ export const ReportsScreen: React.FC = () => {
                             totalCount > 0 ? ((presentCount / totalCount) * 100).toFixed(1) : '0';
 
                           return (
-                            <View key={student.id} style={styles.tableRow}>
-                              <Text style={[styles.tableCell, styles.tableCellStudent]}>
+                            <View key={student.id} style={[
+                              styles.tableRow,
+                              isMobile && {
+                                flexDirection: 'column',
+                              }
+                            ]}>
+                              <Text style={[styles.tableCell, styles.tableCellStudent, isMobile && { width: '100%' }]}>
                                 {student.full_name}
                               </Text>
-                              <Text style={[styles.tableCell, styles.tableCellProgress]}>
+                              <Text style={[styles.tableCell, styles.tableCellProgress, isMobile && { width: '100%' }]}>
                                 {presentCount} / {totalCount}
                               </Text>
-                              <Text style={[styles.tableCell, styles.tableCellProgress]}>
+                              <Text style={[styles.tableCell, styles.tableCellProgress, isMobile && { width: '100%' }]}>
                                 {attendanceRate}%
                               </Text>
                             </View>
@@ -604,12 +664,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   dashboardCardsRow: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    flexDirection: 'row',
     gap: spacing.lg,
     marginBottom: spacing.lg,
+    width: '100%',
+    flexWrap: 'wrap',
+  },
+  dashboardCardsRowMobile: {
+    flexDirection: 'column',
+    gap: spacing.md,
   },
   dashboardCardContainer: {
-    flex: Platform.OS === 'web' ? 1 : 1,
+    flex: 1,
+    minWidth: 280,
+    maxWidth: '100%',
+  },
+  dashboardCardContainerMobile: {
+    flex: 0,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   loadingContainer: {
     padding: spacing.xl,
@@ -692,18 +766,21 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { position: 'sticky', top: 0, zIndex: 10 } : {}),
   },
   modalHeaderTop: {
-    flexDirection: 'row',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: Platform.OS === 'web' ? 'flex-start' : 'stretch',
     padding: spacing.lg,
+    gap: spacing.md,
   },
   modalHeaderLeft: {
-    flex: 1,
+    flex: Platform.OS === 'web' ? 1 : 0,
+    width: Platform.OS === 'web' ? 'auto' : '100%',
   },
   modalHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
     gap: spacing.md,
+    width: Platform.OS === 'web' ? 'auto' : '100%',
   },
   modalTitle: {
     fontSize: 28,
@@ -839,32 +916,31 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   reportFromTo: {
-    flexDirection: 'row',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     justifyContent: 'space-between',
     marginTop: spacing.xl,
     paddingTop: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     width: '100%',
+    gap: spacing.lg,
     ...(Platform.OS === 'web' ? { alignSelf: 'center' } : {}),
   },
   reportFrom: {
-    flex: 1,
+    flex: Platform.OS === 'web' ? 1 : 0,
+    width: Platform.OS === 'web' ? 'auto' : '100%',
     ...(Platform.OS === 'web' ? { 
       maxWidth: '48%',
       paddingRight: spacing.lg,
-    } : {
-      marginRight: spacing.xl,
-    }),
+    } : {}),
   },
   reportTo: {
-    flex: 1,
+    flex: Platform.OS === 'web' ? 1 : 0,
+    width: Platform.OS === 'web' ? 'auto' : '100%',
     ...(Platform.OS === 'web' ? { 
       maxWidth: '48%',
       paddingLeft: spacing.lg,
-    } : {
-      marginLeft: spacing.xl,
-    }),
+    } : {}),
   },
   reportFromToLabel: {
     fontSize: 12,
@@ -904,7 +980,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { overflowX: 'auto' } : {}),
   },
   tableHeader: {
-    flexDirection: 'row',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     backgroundColor: '#F9FAFB',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
@@ -921,11 +997,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
+    gap: spacing.xs,
     ...(Platform.OS === 'web' ? { display: 'table-row' } : {}),
   },
   tableCell: {
@@ -933,29 +1010,29 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   tableCellStudent: {
-    flex: 2,
-    ...(Platform.OS === 'web' ? { width: '30%' } : {}),
+    flex: Platform.OS === 'web' ? 2 : 0,
+    width: Platform.OS === 'web' ? '30%' : '100%',
   },
   tableCellClass: {
-    flex: 2,
-    ...(Platform.OS === 'web' ? { width: '25%' } : {}),
+    flex: Platform.OS === 'web' ? 2 : 0,
+    width: Platform.OS === 'web' ? '25%' : '100%',
   },
   tableCellDate: {
-    flex: 1,
-    ...(Platform.OS === 'web' ? { width: '15%' } : {}),
+    flex: Platform.OS === 'web' ? 1 : 0,
+    width: Platform.OS === 'web' ? '15%' : '100%',
   },
   tableCellStatus: {
-    flex: 1,
+    flex: Platform.OS === 'web' ? 1 : 0,
     fontWeight: '600',
-    ...(Platform.OS === 'web' ? { width: '10%' } : {}),
+    width: Platform.OS === 'web' ? '10%' : '100%',
   },
   tableCellNotes: {
-    flex: 2,
-    ...(Platform.OS === 'web' ? { width: '20%' } : {}),
+    flex: Platform.OS === 'web' ? 2 : 0,
+    width: Platform.OS === 'web' ? '20%' : '100%',
   },
   tableCellProgress: {
-    flex: 1,
-    ...(Platform.OS === 'web' ? { width: '20%' } : {}),
+    flex: Platform.OS === 'web' ? 1 : 0,
+    width: Platform.OS === 'web' ? '20%' : '100%',
   },
   tableEmptyCell: {
     fontSize: 14,
