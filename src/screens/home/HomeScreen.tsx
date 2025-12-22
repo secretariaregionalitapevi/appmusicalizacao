@@ -748,10 +748,7 @@ export const HomeScreen: React.FC = () => {
 
           {/* Main Metrics Cards */}
           <View style={[styles.metricsRow, isMobile && styles.metricsRowMobile]}>
-            <View style={[
-              styles.metricCard, 
-              isMobile && styles.metricCardMobile
-            ]}>
+            <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
                   styles.metricCardTitle, 
@@ -776,10 +773,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={[
-              styles.metricCard, 
-              isMobile && styles.metricCardMobile
-            ]}>
+            <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
                   styles.metricCardTitle, 
@@ -818,10 +812,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={[
-              styles.metricCard, 
-              isMobile && styles.metricCardMobile
-            ]}>
+            <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
                   styles.metricCardTitle, 
@@ -860,10 +851,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={[
-              styles.metricCard, 
-              isMobile && styles.metricCardMobile
-            ]}>
+            <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
                   styles.metricCardTitle, 
@@ -1414,7 +1402,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     width: '100%',
     marginHorizontal: 0,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 0,
     marginLeft: 0,
     marginRight: 0,
   },
@@ -1444,13 +1432,28 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    margin: 0,
     marginHorizontal: 0,
     marginLeft: 0,
     marginRight: 0,
     marginTop: 0,
     marginBottom: 0,
+    ...(isWeb
+      ? {
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+        }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 3,
+        }),
   },
   metricCardHeader: {
     flexDirection: 'row',
