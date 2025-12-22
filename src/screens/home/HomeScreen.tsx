@@ -405,11 +405,19 @@ export const HomeScreen: React.FC = () => {
       setLoading(true);
       console.log('🔄 Iniciando carregamento de dados do dashboard...');
 
+      // Timeout de segurança - se demorar mais de 10 segundos, parar o loading
+      let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
+        console.warn('⏱️ Timeout no carregamento de dados - desativando loading');
+        setLoading(false);
+        timeoutId = null;
+      }, 10000);
+
       // Verificar sessão antes de fazer requisições
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         console.error('❌ Erro de sessão:', sessionError);
         console.error('❌ Sessão não disponível, não é possível carregar dados');
+        clearTimeout(timeoutId);
         setLoading(false);
         return;
       }
@@ -712,9 +720,35 @@ export const HomeScreen: React.FC = () => {
         console.error('❌ Mensagem:', error.message);
         console.error('❌ Stack:', error.stack);
       }
-      // Garantir que o loading seja desativado mesmo em caso de erro
-      setLoading(false);
+      
+      // Mesmo com erro, definir valores padrão para não travar a tela
+      setStats({
+        totalStudents: 0,
+        activeStudents: 0,
+        totalClasses: 0,
+        completedClasses: 0,
+        upcomingClasses: 0,
+        totalAttendance: 0,
+        attendanceRate: 0,
+        maleStudents: 0,
+        femaleStudents: 0,
+        maleAttendance: 0,
+        femaleAttendance: 0,
+      });
+      setPreviousStats({
+        totalStudents: 0,
+        attendanceRate: 0,
+        upcomingClasses: 0,
+        totalClasses: 0,
+      });
+      setRecentActivities([]);
+      setRecentClasses([]);
+      setStudentsWithConsecutiveAbsences([]);
     } finally {
+      // Limpar timeout se ainda estiver ativo
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       // Garantir que o loading sempre seja desativado
       setLoading(false);
       console.log('✅ Carregamento de dados finalizado');
