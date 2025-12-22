@@ -676,10 +676,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         {/* Main Content */}
         <View style={[
           styles.mainContent,
-          isMobile && {
-            width: '100%',
-            marginLeft: 0,
-          }
+          isMobile && !sidebarOpen && styles.mainContentMobileFull,
+          isMobile && sidebarOpen && styles.mainContentMobileHidden,
         ]}>
           <ScrollView 
             style={styles.mainContentScroll} 
@@ -1002,6 +1000,8 @@ const styles = StyleSheet.create({
     ...(isWeb ? {} : {
       width: '100%',
       overflow: 'hidden',
+      minWidth: '100%',
+      maxWidth: '100%',
     }),
   },
   overlay: {
@@ -1083,6 +1083,17 @@ const styles = StyleSheet.create({
       minWidth: '100%',
       maxWidth: '100%',
     }),
+  },
+  mainContentMobileFull: {
+    width: '100%',
+    marginLeft: 0,
+    paddingLeft: 0,
+    flex: 1,
+    zIndex: 1,
+  },
+  mainContentMobileHidden: {
+    opacity: 0.3,
+    pointerEvents: 'none',
   },
   mainContentScroll: {
     flex: 1,

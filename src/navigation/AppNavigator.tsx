@@ -3,6 +3,7 @@
  * Gerencia a navegação entre autenticação e aplicativo principal
  */
 import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthNavigator } from './AuthNavigator';
 import { TabNavigator } from './TabNavigator';
@@ -213,8 +214,8 @@ export const AppNavigator: React.FC = () => {
         if (event === 'SIGNED_IN') {
           console.log('📝 Evento SIGNED_IN recebido. Verificando sessão...');
           
-          // Aguardar um pouco para dar tempo do signup fazer logout se necessário
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Aguardar MAIS TEMPO para dar tempo do signup fazer logout completamente
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Aumentado para 2s
           
           // Verificar se ainda há sessão (pode ter sido logout do signup)
           const { data: { session: checkSession } } = await supabase.auth.getSession();
@@ -222,6 +223,17 @@ export const AppNavigator: React.FC = () => {
             console.log('✅ Sessão não encontrada após SIGNED_IN - provavelmente foi logout do signup');
             setIsAuthenticated(false);
             return;
+          }
+          
+          // Verificar se o user/profile está null no useAuth (indicando que foi signup)
+          // Se estiver null, não autenticar mesmo com sessão
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            const authState = (window as any).__AUTH_STATE__;
+            if (authState && (authState.user === null || authState.profile === null)) {
+              console.log('⚠️ User/Profile null detectado - provavelmente signup. Não autenticando.');
+              setIsAuthenticated(false);
+              return;
+            }
           }
           
           // Se ainda há sessão, verificar perfil normalmente

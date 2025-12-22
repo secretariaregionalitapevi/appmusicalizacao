@@ -107,6 +107,38 @@ if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !=
         border-color: #f59e0b !important;
       }
       
+      /* Modal Seantheme Style (padrão central) */
+      .swal2-modal-seantheme {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        font-size: 15px !important;
+        border-radius: 8px !important;
+        padding: 1.5rem !important;
+        max-width: 400px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      
+      .swal2-title-seantheme {
+        font-size: 20px !important;
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+        margin-bottom: 0.75rem !important;
+      }
+      
+      .swal2-content-seantheme {
+        font-size: 14px !important;
+        color: #6b7280 !important;
+        line-height: 1.5 !important;
+      }
+      
+      .swal2-confirm-seantheme {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1.5rem !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      }
+      
       /* Modal (para erros importantes) */
       .swal2-popup:not(.swal2-toast),
       .swal2-popup-error-elegant {
@@ -175,36 +207,30 @@ if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !=
 
 export const showToast = {
   success: (title: string, message?: string) => {
-    // 🚀 MELHORIA: Sempre usar title como mensagem única (ultra-compacto)
-    // Se message foi fornecido, combinar em uma linha
-    const finalMessage = message ? `${title} ${message}` : title;
-    
     if (Platform.OS === 'web') {
-      // 🚀 MODELO APPNEW: Toast de sucesso com cores e configurações específicas
+      // 🚀 MODELO SEANTHEME: Modal central (não toast)
       const Swal = getSwal();
       if (Swal) {
-        const config = {
-          toast: true,
-          position: 'top-end' as const,
-          showConfirmButton: false,
-          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
-          timerProgressBar: true, // Modelo APPNEW usa progressBar
-          didOpen: (toast: any) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-          }
-        };
-
         Swal.fire({
-          ...config,
           icon: 'success',
-          title: finalMessage,
-          background: '#f0f9ff', // Cor de fundo do modelo APPNEW
-          color: '#059669', // Cor do texto (verde)
-          iconColor: '#059669' // Cor do ícone (verde)
+          title: title,
+          text: message || '',
+          showConfirmButton: true,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#10b981',
+          timer: 2000,
+          timerProgressBar: true,
+          allowOutsideClick: true,
+          allowEscapeKey: true,
+          customClass: {
+            popup: 'swal2-modal-seantheme',
+            title: 'swal2-title-seantheme',
+            content: 'swal2-content-seantheme',
+            confirmButton: 'swal2-confirm-seantheme',
+          },
         });
       } else {
-        console.log(`✅ ${finalMessage}`);
+        console.log(`✅ ${title}: ${message || ''}`);
       }
     } else if (Toast) {
       // 🚀 MELHORIA: Toast mobile ultra-compacto (uma linha)
@@ -239,28 +265,24 @@ export const showToast = {
 
   error: (title: string, message?: string) => {
     if (Platform.OS === 'web') {
+      // 🚀 MODELO SEANTHEME: Modal central de erro
       const Swal = getSwal();
       if (Swal) {
-        // 🚀 MODELO APPNEW: Toast de erro com cores específicas
-        const config = {
-          toast: true,
-          position: 'top-end' as const,
-          showConfirmButton: false,
-          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
-          timerProgressBar: true,
-          didOpen: (toast: any) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-          }
-        };
-
         Swal.fire({
-          ...config,
           icon: 'error',
-          title: message ? `${title} ${message}` : title,
-          background: '#fef2f2', // Cor de fundo vermelho claro (modelo APPNEW)
-          color: '#dc2626', // Cor do texto (vermelho)
-          iconColor: '#dc2626' // Cor do ícone (vermelho)
+          title: title,
+          text: message || '',
+          showConfirmButton: true,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#ef4444',
+          allowOutsideClick: true,
+          allowEscapeKey: true,
+          customClass: {
+            popup: 'swal2-modal-seantheme',
+            title: 'swal2-title-seantheme',
+            content: 'swal2-content-seantheme',
+            confirmButton: 'swal2-confirm-seantheme',
+          },
         });
       } else {
         // Fallback para alert nativo
@@ -296,28 +318,26 @@ export const showToast = {
 
   info: (title: string, message?: string) => {
     if (Platform.OS === 'web') {
-      // 🚀 MODELO APPNEW: Toast de info com cores específicas
+      // 🚀 MODELO SEANTHEME: Modal central de info
       const Swal = getSwal();
       if (Swal) {
-        const config = {
-          toast: true,
-          position: 'top-end' as const,
-          showConfirmButton: false,
-          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
-          timerProgressBar: true,
-          didOpen: (toast: any) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-          }
-        };
-
         Swal.fire({
-          ...config,
           icon: 'info',
-          title: message ? `${title} ${message}` : title,
-          background: '#eff6ff', // Cor de fundo azul claro (modelo APPNEW)
-          color: '#1e40af', // Cor do texto (azul)
-          iconColor: '#1e40af' // Cor do ícone (azul)
+          title: title,
+          text: message || '',
+          showConfirmButton: true,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#3b82f6',
+          timer: 2500,
+          timerProgressBar: true,
+          allowOutsideClick: true,
+          allowEscapeKey: true,
+          customClass: {
+            popup: 'swal2-modal-seantheme',
+            title: 'swal2-title-seantheme',
+            content: 'swal2-content-seantheme',
+            confirmButton: 'swal2-confirm-seantheme',
+          },
         });
       } else {
         // Fallback para console
@@ -350,28 +370,26 @@ export const showToast = {
 
   warning: (title: string, message?: string) => {
     if (Platform.OS === 'web') {
-      // 🚀 MODELO APPNEW: Toast de warning com cores específicas
+      // 🚀 MODELO SEANTHEME: Modal central de warning
       const Swal = getSwal();
       if (Swal) {
-        const config = {
-          toast: true,
-          position: 'top-end' as const,
-          showConfirmButton: false,
-          timer: 1200, // Otimizado para 1.2 segundos (modelo APPNEW)
-          timerProgressBar: true,
-          didOpen: (toast: any) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-          }
-        };
-
         Swal.fire({
-          ...config,
           icon: 'warning',
-          title: message ? `${title} ${message}` : title,
-          background: '#fffbeb', // Cor de fundo amarelo claro (modelo APPNEW)
-          color: '#d97706', // Cor do texto (laranja)
-          iconColor: '#d97706' // Cor do ícone (laranja)
+          title: title,
+          text: message || '',
+          showConfirmButton: true,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#f59e0b',
+          timer: 3000,
+          timerProgressBar: true,
+          allowOutsideClick: true,
+          allowEscapeKey: true,
+          customClass: {
+            popup: 'swal2-modal-seantheme',
+            title: 'swal2-title-seantheme',
+            content: 'swal2-content-seantheme',
+            confirmButton: 'swal2-confirm-seantheme',
+          },
         });
       } else {
         // Fallback para console

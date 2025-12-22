@@ -2,6 +2,7 @@
  * Hook customizado para autenticação
  */
 import { useState, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { supabase, isSupabaseConfigured } from '@/api/supabase';
 import { poloService } from '@/services/poloService';
 import type { User } from '@supabase/supabase-js';
@@ -302,8 +303,13 @@ export const useAuth = (): UseAuthReturn => {
         role: userProfile.role,
       });
 
-      setUser(data.user);
-      setProfile(userProfile);
+          setUser(data.user);
+          setProfile(userProfile);
+          
+          // Expor estado para AppNavigator verificar
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            (window as any).__AUTH_STATE__ = { user: data.user, profile: userProfile };
+          }
     } finally {
       setIsLoading(false);
     }
@@ -1047,7 +1053,7 @@ export const useAuth = (): UseAuthReturn => {
         await supabase.auth.signOut();
         
         // Aguardar logout processar completamente (delay maior para garantir)
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 1200));
         
         // Verificar se logout foi bem-sucedido
         const { data: { session: verifySession } } = await supabase.auth.getSession();
@@ -1056,7 +1062,7 @@ export const useAuth = (): UseAuthReturn => {
           setUser(null);
           setProfile(null);
           await supabase.auth.signOut();
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 800));
           
           // Verificar novamente
           const { data: { session: verifySession2 } } = await supabase.auth.getSession();
@@ -1065,13 +1071,18 @@ export const useAuth = (): UseAuthReturn => {
             setUser(null);
             setProfile(null);
             await supabase.auth.signOut();
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
           }
         }
         
         // Garantir estado limpo uma última vez
         setUser(null);
         setProfile(null);
+        
+        // Expor estado para AppNavigator verificar
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          (window as any).__AUTH_STATE__ = { user: null, profile: null };
+        }
         
         console.log('✅ Logout concluído. Usuário não será logado automaticamente.');
       } catch (error: any) {
