@@ -709,7 +709,13 @@ export const HomeScreen: React.FC = () => {
       onRefresh={loadDashboardData}
       refreshing={loading}
     >
-      <View style={styles.dashboardContainer}>
+      <View style={[
+        styles.dashboardContainer,
+        isMobile && {
+          paddingHorizontal: 0,
+          marginHorizontal: 0,
+        }
+      ]}>
           {/* Header Section */}
           <View style={[
             styles.dashboardHeader,
@@ -1360,10 +1366,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '100%',
-    ...(isMobile ? {
-      paddingHorizontal: 0,
-      marginHorizontal: 0,
-    } : {}),
   },
   greeting: {
     fontSize: 24,
