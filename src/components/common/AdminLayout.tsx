@@ -1200,14 +1200,14 @@ const styles = StyleSheet.create({
     }),
   },
   scrollContentMobile: {
-    padding: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: 20,
+    paddingHorizontal: spacing.xs,
     width: '100%',
     minWidth: '100%',
     maxWidth: '100%',
     flexGrow: 1,
     overflow: 'hidden',
-    paddingHorizontal: spacing.md,
   },
   pageTitle: {
     fontSize: 24,

@@ -749,10 +749,7 @@ export const HomeScreen: React.FC = () => {
           <View style={[styles.metricsRow, isMobile && styles.metricsRowMobile]}>
             <View style={[
               styles.metricCard, 
-              isMobile && {
-                ...styles.metricCardMobile,
-                padding: spacing.md,
-              }
+              isMobile && styles.metricCardMobile
             ]}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
@@ -780,10 +777,7 @@ export const HomeScreen: React.FC = () => {
 
             <View style={[
               styles.metricCard, 
-              isMobile && {
-                ...styles.metricCardMobile,
-                padding: spacing.md,
-              }
+              isMobile && styles.metricCardMobile
             ]}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
@@ -825,10 +819,7 @@ export const HomeScreen: React.FC = () => {
 
             <View style={[
               styles.metricCard, 
-              isMobile && {
-                ...styles.metricCardMobile,
-                padding: spacing.md,
-              }
+              isMobile && styles.metricCardMobile
             ]}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
@@ -870,10 +861,7 @@ export const HomeScreen: React.FC = () => {
 
             <View style={[
               styles.metricCard, 
-              isMobile && {
-                ...styles.metricCardMobile,
-                padding: spacing.md,
-              }
+              isMobile && styles.metricCardMobile
             ]}>
               <View style={styles.metricCardHeader}>
                 <Text style={[
@@ -1372,6 +1360,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '100%',
+    ...(isMobile ? {
+      paddingHorizontal: 0,
+      marginHorizontal: 0,
+    } : {}),
   },
   greeting: {
     fontSize: 24,
@@ -1420,10 +1412,14 @@ const styles = StyleSheet.create({
   },
   metricsRowMobile: {
     flexDirection: 'column',
-    gap: spacing.md,
+    gap: spacing.sm,
     width: '100%',
     marginHorizontal: 0,
     paddingHorizontal: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
   },
   metricCard: {
     flex: 1,
@@ -1451,10 +1447,13 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
     marginHorizontal: 0,
     marginLeft: 0,
     marginRight: 0,
+    marginTop: 0,
+    marginBottom: spacing.sm,
   },
   metricCardHeader: {
     flexDirection: 'row',

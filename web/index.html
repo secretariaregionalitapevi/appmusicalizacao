@@ -118,6 +118,19 @@
         max-width: 100vw !important;
         box-sizing: border-box !important;
       }
+      
+      /* Garantir que View do React Native Web respeite a largura */
+      [data-testid],
+      [class*="View"] {
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+      }
+      
+      /* Forçar que cards não estourem */
+      [style*="metricCard"] {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
     }
     
     /* Prevenir scroll horizontal em todos os dispositivos */
