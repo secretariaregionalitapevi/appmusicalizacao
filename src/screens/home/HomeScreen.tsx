@@ -1285,7 +1285,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.activitiesCard}>
+            <View style={[styles.activitiesCard, isMobile && styles.activitiesCardMobile]}>
               <View style={styles.activitiesCardHeader}>
                 <Text style={styles.activitiesCardTitle}>Aulas Recentes</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'Classes' })}>
@@ -1998,7 +1998,13 @@ const styles = StyleSheet.create({
   activitiesRowMobile: {
     flexDirection: 'column',
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    alignSelf: 'stretch',
+    flexShrink: 0,
   },
   activitiesCard: {
     flex: 1,
@@ -2022,10 +2028,11 @@ const styles = StyleSheet.create({
         }),
   },
   activitiesCardMobile: {
-    flex: 0,
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
+    marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   activitiesCardHeader: {
     flexDirection: 'row',
