@@ -1109,7 +1109,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.analyticsCard}>
+            <View style={[styles.analyticsCard, isMobile && styles.analyticsCardMobile]}>
               <Text style={styles.analyticsCardTitle}>AULAS POR STATUS</Text>
               <View style={styles.analyticsContent}>
                 <View style={styles.classStatusWrapper}>
