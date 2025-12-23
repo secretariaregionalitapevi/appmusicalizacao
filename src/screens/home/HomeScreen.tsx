@@ -1982,6 +1982,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xs,
+    width: '100%',
+    minWidth: 0,
   },
   analyticsProgressLabel: {
     fontSize: 14,
