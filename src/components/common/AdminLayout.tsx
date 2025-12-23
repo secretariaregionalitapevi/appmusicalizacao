@@ -1207,7 +1207,7 @@ const styles = StyleSheet.create({
     minWidth: '100%',
     maxWidth: '100%',
     flexGrow: 1,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   pageTitle: {
     fontSize: 24,

@@ -1450,9 +1450,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginHorizontal: 0,
     alignSelf: 'stretch',
+    minHeight: 0,
   },
   dashboardContainerMobile: {
     paddingHorizontal: spacing.md,
+    minHeight: 'auto',
   },
   greeting: {
     fontSize: 24,
@@ -1547,9 +1549,9 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 0,
     marginTop: 0,
-    marginBottom: 0,
+    marginBottom: spacing.sm,
     alignSelf: 'stretch',
-    overflow: 'hidden',
+    overflow: 'visible',
     ...(isWeb
       ? {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
