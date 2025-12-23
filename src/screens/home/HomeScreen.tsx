@@ -1857,7 +1857,7 @@ const styles = StyleSheet.create({
   },
   classStatusWrapper: {
     flexDirection: isWeb ? 'row' : 'column',
-    alignItems: 'flex-start',
+    alignItems: isWeb ? 'flex-start' : 'center',
     justifyContent: 'space-between',
     width: '100%',
     minWidth: 0,
@@ -1868,6 +1868,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    width: isWeb ? 'auto' : '100%',
+    maxWidth: '100%',
   },
   classStatusChartContainer: {
     position: 'relative',
