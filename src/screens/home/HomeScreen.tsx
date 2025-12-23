@@ -1903,7 +1903,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   classStatusLegend: {
-    flex: 1,
+    flex: isWeb ? 1 : 0,
     gap: spacing.md,
     width: '100%',
     minWidth: 0,
