@@ -1127,7 +1127,10 @@ export const HomeScreen: React.FC = () => {
                   </View>
                   
                   {/* Legend e Detalhes */}
-                  <View style={styles.classStatusLegend}>
+                  <View style={[
+                    styles.classStatusLegend,
+                    isMobile && { flex: 0, width: '100%', minWidth: 0, maxWidth: '100%' }
+                  ]}>
                     <View style={styles.analyticsProgressItem}>
                       <View style={styles.analyticsProgressHeader}>
                         <View style={styles.classStatusLegendItem}>
