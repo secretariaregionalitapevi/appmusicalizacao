@@ -1654,10 +1654,11 @@ const styles = StyleSheet.create({
         }),
   },
   analyticsCardMobile: {
-    flex: 0,
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
+    marginBottom: spacing.md,
+    overflow: 'visible',
   },
   analyticsCardTitle: {
     fontSize: 13,
