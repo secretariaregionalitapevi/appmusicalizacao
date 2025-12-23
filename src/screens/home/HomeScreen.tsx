@@ -1675,6 +1675,9 @@ const styles = StyleSheet.create({
   },
   analyticsContent: {
     gap: 0,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   analyticsItem: {
     paddingBottom: spacing.md,
@@ -1865,6 +1868,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
     maxWidth: '100%',
     gap: spacing.lg,
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
   },
   classStatusChart: {
     position: 'relative',
@@ -1872,6 +1877,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: isWeb ? 'auto' : '100%',
     maxWidth: '100%',
+    alignSelf: 'center',
   },
   classStatusChartContainer: {
     position: 'relative',
