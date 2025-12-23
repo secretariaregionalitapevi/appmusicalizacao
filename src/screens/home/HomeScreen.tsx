@@ -1039,7 +1039,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.analyticsCard}>
+            <View style={[styles.analyticsCard, isMobile && styles.analyticsCardMobile]}>
               <Text style={styles.analyticsCardTitle}>FREQUÊNCIA POR GÊNERO</Text>
               <View style={styles.analyticsContent}>
                 <View style={styles.genderChartWrapper}>
@@ -1624,7 +1624,13 @@ const styles = StyleSheet.create({
   analyticsRowMobile: {
     flexDirection: 'column',
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    alignSelf: 'stretch',
+    flexShrink: 0,
   },
   analyticsCard: {
     flex: 1,
