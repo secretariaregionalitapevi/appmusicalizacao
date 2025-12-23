@@ -75,7 +75,9 @@ interface PieChartProps {
 }
 
 const PieChart: React.FC<PieChartProps> = ({ completed, scheduled, total }) => {
-  const size = 120;
+  const screenWidth = Dimensions.get('window').width;
+  const isMobileChart = screenWidth < 768;
+  const size = isMobileChart ? Math.min(120, screenWidth * 0.4) : 120;
   const strokeWidth = 18;
   
   const completedPercentage = total > 0 ? (completed / total) : 0;
