@@ -209,31 +209,52 @@ export const AppNavigator: React.FC = () => {
           return;
         }
 
-        // IMPORTANTE: Se o evento for SIGNED_IN, verificar se a sessão ainda existe
-        // (pode ter sido logout do signup antes do evento chegar)
+        // IMPORTANTE: Se o evento for SIGNED_IN, verificar se é signup ou refresh normal
         if (event === 'SIGNED_IN') {
-          console.log('📝 Evento SIGNED_IN recebido. Verificando sessão...');
-          
-          // Aguardar MAIS TEMPO para dar tempo do signup fazer logout completamente
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Aumentado para 2s
-          
-          // Verificar se ainda há sessão (pode ter sido logout do signup)
-          const { data: { session: checkSession } } = await supabase.auth.getSession();
-          if (!checkSession) {
-            console.log('✅ Sessão não encontrada após SIGNED_IN - provavelmente foi logout do signup');
-            setIsAuthenticated(false);
-            return;
-          }
+          console.log('📝 Evento SIGNED_IN recebido. Verificando se é signup...');
           
           // Verificar se o user/profile está null no useAuth (indicando que foi signup)
-          // Se estiver null, não autenticar mesmo com sessão
+          // Se for signup, aplicar delay; se for refresh normal, processar imediatamente
+          let isSignup = false;
           if (Platform.OS === 'web' && typeof window !== 'undefined') {
             const authState = (window as any).__AUTH_STATE__;
             if (authState && (authState.user === null || authState.profile === null)) {
-              console.log('⚠️ User/Profile null detectado - provavelmente signup. Não autenticando.');
+              isSignup = true;
+              console.log('⚠️ User/Profile null detectado - é signup. Aplicando delay...');
+            }
+          }
+          
+          // Aplicar delay APENAS se for signup (Bug 4)
+          // Para refresh de token normal, processar imediatamente sem delay
+          if (isSignup) {
+            console.log('⏳ Aguardando logout do signup completar...');
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Delay apenas para signup
+            
+            // Verificar se ainda há sessão (pode ter sido logout do signup)
+            const { data: { session: checkSession } } = await supabase.auth.getSession();
+            if (!checkSession) {
+              console.log('✅ Sessão não encontrada após SIGNED_IN - logout do signup concluído');
               setIsAuthenticated(false);
               return;
             }
+            
+            // Verificar novamente se ainda é signup (pode ter mudado durante o delay)
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+              const authState = (window as any).__AUTH_STATE__;
+              if (authState && (authState.user === null || authState.profile === null)) {
+                console.log('⚠️ User/Profile ainda null após delay - não autenticar');
+                setIsAuthenticated(false);
+                return;
+              }
+            }
+          }
+          
+          // Para signup ou refresh normal, verificar sessão e perfil
+          const { data: { session: checkSession } } = await supabase.auth.getSession();
+          if (!checkSession) {
+            console.log('✅ Sessão não encontrada após SIGNED_IN');
+            setIsAuthenticated(false);
+            return;
           }
           
           // Se ainda há sessão, verificar perfil normalmente

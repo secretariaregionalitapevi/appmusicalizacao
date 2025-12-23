@@ -1009,10 +1009,10 @@ export const useAuth = (): UseAuthReturn => {
         poloId_original: poloId
       });
       
-      // IMPORTANTE: Limpar estado ANTES de criar perfil para evitar que AppNavigator detecte login
-      console.log('📝 Limpando estado ANTES de criar perfil para evitar login automático...');
-      setUser(null);
-      setProfile(null);
+      // NOTA: NÃO limpar estado aqui - será limpo apenas após confirmar logout completo
+      // Limpar antes da chamada RPC faz outros componentes verem null imediatamente,
+      // potencialmente acionando logout/navegação antes da criação do perfil completar
+      console.log('📝 Criando perfil via RPC...');
       
       try {
         const { error: rpcError } = await supabase.rpc('musicalizacao_create_profile', {
@@ -1104,10 +1104,16 @@ export const useAuth = (): UseAuthReturn => {
 
       if (profileError) {
         console.error('❌ Erro ao criar perfil:', profileError);
-        console.error('❌ Código:', profileError.code);
-        console.error('❌ Mensagem:', profileError.message);
-        console.error('❌ Detalhes:', profileError.details);
-        console.error('❌ Hint:', profileError.hint);
+        // Verificar se profileError não é null antes de acessar propriedades (Bug 2)
+        if (profileError) {
+          console.error('❌ Código:', profileError.code);
+          console.error('❌ Mensagem:', profileError.message);
+          console.error('❌ Detalhes:', profileError.details);
+          console.error('❌ Hint:', profileError.hint);
+        }
+        
+        // Verificar sessão antes de processar erros (para verificação de RLS)
+        const { data: sessionCheck } = await supabase.auth.getSession();
         
         // Verificar se o perfil foi criado mesmo com erro (pode ter sido criado por trigger)
         console.log('🔍 Verificando se o perfil foi criado por trigger...');
@@ -1117,34 +1123,36 @@ export const useAuth = (): UseAuthReturn => {
         await supabase.auth.signOut();
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // NÃO verificar perfil após logout (RLS vai bloquear)
-        // Se a função RPC não retornou erro, assumir que foi criado
-        console.log('✅ Assumindo que perfil foi criado (função RPC executada).');
-        return { user: null, error: null };
-        
+        // Verificar erros de RLS ANTES do return (Bug 3)
         // Se não há sessão e o erro é de RLS, informar que precisa confirmar email
-        if (!sessionCheck?.data?.session && (profileError.code === '42501' || profileError.message.includes('row-level security'))) {
-          await supabase.auth.signOut();
+        if (profileError && !sessionCheck?.session && (profileError.code === '42501' || profileError.message?.includes('row-level security'))) {
           return { 
             user: null, 
             error: new Error('Conta criada! Por favor, confirme seu email (verifique sua caixa de entrada) e faça login para completar o cadastro.') 
           };
         }
         
-        await supabase.auth.signOut();
-        
-        if (profileError.code === '42501' || profileError.message.includes('row-level security')) {
+        // Verificar outros erros de RLS
+        if (profileError && (profileError.code === '42501' || profileError.message?.includes('row-level security'))) {
           return { 
             user: null, 
             error: new Error('Erro de permissão RLS. Execute a migration 013_fix_rls_insert_definitive.sql no Supabase SQL Editor.') 
           };
         }
         
-        // Melhorar mensagem de erro
-        let errorMessage = `Erro ao criar perfil: ${profileError.message}`;
-        if (profileError.message.includes('duplicate key') || profileError.message.includes('already exists')) {
+        // Se a função RPC não retornou erro mas há profileError de outro tipo,
+        // verificar se foi criado por trigger (caso especial)
+        // Se não há código de erro específico, assumir que foi criado
+        if (!profileError.code && !profileError.message?.includes('row-level security')) {
+          console.log('✅ Assumindo que perfil foi criado (função RPC executada ou trigger).');
+          return { user: null, error: null };
+        }
+        
+        // Melhorar mensagem de erro para outros casos
+        let errorMessage = `Erro ao criar perfil: ${profileError.message || 'Erro desconhecido'}`;
+        if (profileError.message?.includes('duplicate key') || profileError.message?.includes('already exists')) {
           errorMessage = 'Este perfil já existe. Tente fazer login.';
-        } else if (profileError.message.includes('foreign key') || profileError.message.includes('violates foreign key')) {
+        } else if (profileError.message?.includes('foreign key') || profileError.message?.includes('violates foreign key')) {
           errorMessage = 'Erro ao associar polo. Verifique se o polo selecionado existe.';
         }
         

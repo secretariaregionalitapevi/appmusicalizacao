@@ -813,16 +813,24 @@ export const HomeScreen: React.FC = () => {
           <View style={[styles.metricsRow, isMobile && styles.metricsRowMobile]}>
             <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
-                <Text style={[
-                  styles.metricCardTitle, 
-                  isMobile && { fontSize: 11 }
-                ]}>TOTAL DE ALUNOS</Text>
+                <Text 
+                  style={[
+                    styles.metricCardTitle, 
+                    isMobile && { fontSize: 11 }
+                  ]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >TOTAL DE ALUNOS</Text>
                 <Ionicons name="people" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={[
-                styles.metricCardValue,
-                isMobile && { fontSize: 24 }
-              ]}>{stats.totalStudents}</Text>
+              <Text 
+                style={[
+                  styles.metricCardValue,
+                  isMobile && { fontSize: 24 }
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isMobile}
+              >{stats.totalStudents}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.activeStudents} ativos
@@ -838,16 +846,24 @@ export const HomeScreen: React.FC = () => {
 
             <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
-                <Text style={[
-                  styles.metricCardTitle, 
-                  isMobile && { fontSize: 11 }
-                ]}>TAXA DE PRESENÇA</Text>
+                <Text 
+                  style={[
+                    styles.metricCardTitle, 
+                    isMobile && { fontSize: 11 }
+                  ]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >TAXA DE PRESENÇA</Text>
                 <Ionicons name="checkmark-circle" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={[
-                styles.metricCardValue,
-                isMobile && { fontSize: 24 }
-              ]}>{stats.attendanceRate.toFixed(1)}%</Text>
+              <Text 
+                style={[
+                  styles.metricCardValue,
+                  isMobile && { fontSize: 24 }
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isMobile}
+              >{stats.attendanceRate.toFixed(1)}%</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.totalAttendance} registros
@@ -877,16 +893,24 @@ export const HomeScreen: React.FC = () => {
 
             <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
-                <Text style={[
-                  styles.metricCardTitle, 
-                  isMobile && { fontSize: 11 }
-                ]}>AULAS AGENDADAS</Text>
+                <Text 
+                  style={[
+                    styles.metricCardTitle, 
+                    isMobile && { fontSize: 11 }
+                  ]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >AULAS AGENDADAS</Text>
                 <Ionicons name="calendar" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={[
-                styles.metricCardValue,
-                isMobile && { fontSize: 24 }
-              ]}>{stats.upcomingClasses}</Text>
+              <Text 
+                style={[
+                  styles.metricCardValue,
+                  isMobile && { fontSize: 24 }
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isMobile}
+              >{stats.upcomingClasses}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
@@ -916,16 +940,24 @@ export const HomeScreen: React.FC = () => {
 
             <View style={isMobile ? styles.metricCardMobile : styles.metricCard}>
               <View style={styles.metricCardHeader}>
-                <Text style={[
-                  styles.metricCardTitle, 
-                  isMobile && { fontSize: 11 }
-                ]}>TOTAL DE AULAS</Text>
+                <Text 
+                  style={[
+                    styles.metricCardTitle, 
+                    isMobile && { fontSize: 11 }
+                  ]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >TOTAL DE AULAS</Text>
                 <Ionicons name="book" size={isMobile ? 20 : 24} color="#033D60" />
               </View>
-              <Text style={[
-                styles.metricCardValue,
-                isMobile && { fontSize: 24 }
-              ]}>{stats.totalClasses}</Text>
+              <Text 
+                style={[
+                  styles.metricCardValue,
+                  isMobile && { fontSize: 24 }
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isMobile}
+              >{stats.totalClasses}</Text>
               <View style={styles.metricCardFooter}>
                 <Text style={styles.metricCardSubtitle}>
                   {stats.completedClasses} completadas
@@ -1412,8 +1444,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '100%',
-    paddingHorizontal: 0,
+    paddingHorizontal: isMobile ? spacing.md : spacing.lg,
     marginHorizontal: 0,
+    alignSelf: 'stretch',
   },
   greeting: {
     fontSize: 24,
@@ -1462,12 +1495,15 @@ const styles = StyleSheet.create({
   },
   metricsRowMobile: {
     flexDirection: 'column',
-    gap: spacing.sm,
+    gap: spacing.md,
     width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
     marginHorizontal: 0,
     paddingHorizontal: 0,
     marginLeft: 0,
     marginRight: 0,
+    alignSelf: 'stretch',
   },
   metricCard: {
     flex: 1,
@@ -1506,6 +1542,8 @@ const styles = StyleSheet.create({
     marginRight: 0,
     marginTop: 0,
     marginBottom: 0,
+    alignSelf: 'stretch',
+    overflow: 'hidden',
     ...(isWeb
       ? {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
@@ -1523,6 +1561,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
+    width: '100%',
+    minWidth: 0,
   },
   metricCardTitle: {
     fontSize: isWeb ? 13 : 12,
@@ -1531,6 +1571,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     flexShrink: 1,
+    flex: 1,
   },
   metricCardTitleMobile: {
     fontSize: 11,
@@ -1541,6 +1582,8 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: spacing.md,
     marginTop: spacing.xs,
+    flexShrink: 0,
+    minWidth: 0,
   },
   metricCardValueMobile: {
     fontSize: 24,
@@ -1549,6 +1592,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
+    minWidth: 0,
+    flexWrap: 'wrap',
   },
   metricCardSubtitle: {
     fontSize: 14,
