@@ -1512,6 +1512,7 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 0,
     alignSelf: 'stretch',
+    flexShrink: 0,
   },
   metricCard: {
     flex: 1,
