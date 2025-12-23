@@ -1658,7 +1658,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     maxWidth: '100%',
     marginBottom: spacing.md,
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   analyticsCardTitle: {
     fontSize: 13,
@@ -1857,6 +1857,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
     gap: spacing.lg,
   },
   classStatusChart: {
@@ -1897,6 +1899,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.md,
     width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
     ...(isWeb ? { paddingLeft: spacing.md } : { paddingTop: spacing.md }),
   },
   classStatusLegendItem: {
@@ -1937,11 +1941,16 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   classStatusSummaryItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
+    minWidth: 0,
   },
   classStatusSummaryLabel: {
     fontSize: 13,
