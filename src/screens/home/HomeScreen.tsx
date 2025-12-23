@@ -1914,6 +1914,8 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
     ...(isWeb ? { paddingLeft: spacing.md } : { paddingTop: spacing.md }),
   },
   classStatusLegendItem: {
