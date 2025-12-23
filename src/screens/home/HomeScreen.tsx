@@ -1855,6 +1855,9 @@ const styles = StyleSheet.create({
   analyticsProgressItem: {
     marginBottom: spacing.md,
     paddingBottom: spacing.md,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   analyticsProgressItemLast: {
     marginBottom: 0,
