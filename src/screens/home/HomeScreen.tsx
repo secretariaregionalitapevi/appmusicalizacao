@@ -1444,9 +1444,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '100%',
-    paddingHorizontal: isMobile ? spacing.md : spacing.lg,
+    paddingHorizontal: spacing.lg,
     marginHorizontal: 0,
     alignSelf: 'stretch',
+  },
+  dashboardContainerMobile: {
+    paddingHorizontal: spacing.md,
   },
   greeting: {
     fontSize: 24,
