@@ -772,7 +772,10 @@ export const HomeScreen: React.FC = () => {
       onRefresh={loadDashboardData}
       refreshing={loading}
     >
-      <View style={styles.dashboardContainer}>
+      <View style={[
+        styles.dashboardContainer,
+        isMobile && styles.dashboardContainerMobile
+      ]}>
           {/* Header Section */}
           <View style={[
             styles.dashboardHeader,
