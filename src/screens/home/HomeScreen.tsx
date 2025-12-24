@@ -395,227 +395,21 @@ export const HomeScreen: React.FC = () => {
     fetchPoloName();
   }, [profile?.poloId]);
 
-  // Função para carregar dados do dashboard
-  const loadDashboardData = useCallback(async () => {
-    if (!profile) {
-      console.log('⚠️ Perfil não disponível, pulando carregamento de dados');
-      setLoading(false);
-      return;
-    }
-
-    // Timeout de segurança - se demorar mais de 10 segundos, parar o loading
-    let timeoutId: NodeJS.Timeout | null = null;
-
+  // Função separada para carregar faltas consecutivas (não bloqueia o carregamento principal)
+  const loadConsecutiveAbsences = useCallback(async () => {
     try {
-      setLoading(true);
-      console.log('🔄 Iniciando carregamento de dados do dashboard...');
-
-      // Timeout de segurança - se demorar mais de 10 segundos, parar o loading
-      timeoutId = setTimeout(() => {
-        console.warn('⏱️ Timeout no carregamento de dados - desativando loading');
-        setLoading(false);
-        timeoutId = null;
-      }, 10000);
-
-      // Verificar sessão antes de fazer requisições
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        console.error('❌ Erro de sessão:', sessionError);
-        console.error('❌ Sessão não disponível, não é possível carregar dados');
-        clearTimeout(timeoutId);
-        setLoading(false);
-        return;
-      }
-
-      console.log('✅ Sessão válida, buscando dados...');
-
-      // Buscar estatísticas de alunos
-        const { data: studentsData, error: studentsError } = await supabase
-          .from('musicalizacao_students')
-          .select('id, is_active, gender');
-
-        if (studentsError) {
-          console.error('Erro ao buscar alunos:', studentsError);
-        } else {
-          console.log('Alunos carregados:', studentsData?.length || 0);
-        }
-
-        const totalStudents = studentsData?.length || 0;
-        const activeStudents = studentsData?.filter(s => {
-          const isActive = s.is_active === true || s.is_active === 'true' || s.is_active === 1;
-          return isActive;
-        }).length || 0;
-        const maleStudents = studentsData?.filter(s => s.gender === 'male').length || 0;
-        const femaleStudents = studentsData?.filter(s => s.gender === 'female').length || 0;
-
-        console.log('Estatísticas de alunos:', { totalStudents, activeStudents, maleStudents, femaleStudents });
-
-        // Calcular período atual (últimos 7 dias) e anterior (14-7 dias atrás)
-        const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        
-        // Buscar estatísticas de aulas do período atual
-        const { data: classesData, error: classesError } = await supabase
-          .from('musicalizacao_classes')
-          .select('id, status, class_date')
-          .gte('class_date', sevenDaysAgo.toISOString().split('T')[0]);
-
-        if (classesError) {
-          console.error('Erro ao buscar aulas:', classesError);
-        } else {
-          console.log('Aulas carregadas:', classesData?.length || 0);
-        }
-
-        const totalClasses = classesData?.length || 0;
-        const completedClasses = classesData?.filter(c => c.status === 'completed').length || 0;
-        const upcomingClasses = classesData?.filter(c => c.status === 'scheduled').length || 0;
-
-        console.log('Estatísticas de aulas:', { totalClasses, completedClasses, upcomingClasses });
-
-        // Buscar estatísticas de presença do período atual
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from('musicalizacao_attendance')
-          .select(`
-            id,
-            is_present,
-            recorded_at,
-            student:musicalizacao_students!student_id (gender)
-          `)
-          .gte('recorded_at', sevenDaysAgo.toISOString());
-
-        if (attendanceError) {
-          console.error('Erro ao buscar presenças:', attendanceError);
-        } else {
-          console.log('Presenças carregadas:', attendanceData?.length || 0);
-        }
-
-        const totalAttendance = attendanceData?.length || 0;
-        const presentCount = attendanceData?.filter(a => {
-          const isPresent = a.is_present === true || a.is_present === 'true' || a.is_present === 1;
-          return isPresent;
-        }).length || 0;
-        const attendanceRate = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
-
-        console.log('Estatísticas de presença:', { totalAttendance, presentCount, attendanceRate });
-
-        // Buscar dados do período anterior (14-7 dias atrás)
-        // Alunos do período anterior - usar o mesmo total (não muda entre períodos)
-        const previousTotalStudents = totalStudents;
-        
-        // Aulas do período anterior (14-7 dias atrás)
-        const { data: previousClassesData } = await supabase
-          .from('musicalizacao_classes')
-          .select('id, status, class_date')
-          .gte('class_date', fourteenDaysAgo.toISOString().split('T')[0])
-          .lt('class_date', sevenDaysAgo.toISOString().split('T')[0]);
-        
-        const previousTotalClasses = previousClassesData?.length || 0;
-        const previousUpcomingClasses = previousClassesData?.filter(c => c.status === 'scheduled').length || 0;
-        
-        // Presenças do período anterior
-        const { data: previousAttendanceData } = await supabase
-          .from('musicalizacao_attendance')
-          .select(`
-            id,
-            is_present,
-            recorded_at
-          `)
-          .gte('recorded_at', fourteenDaysAgo.toISOString())
-          .lt('recorded_at', sevenDaysAgo.toISOString());
-        
-        const previousTotalAttendance = previousAttendanceData?.length || 0;
-        const previousPresentCount = previousAttendanceData?.filter(a => {
-          const isPresent = a.is_present === true || a.is_present === 'true' || a.is_present === 1;
-          return isPresent;
-        }).length || 0;
-        const previousAttendanceRate = previousTotalAttendance > 0 ? (previousPresentCount / previousTotalAttendance) * 100 : 0;
-        
-        setPreviousStats({
-          totalStudents: previousTotalStudents,
-          attendanceRate: previousAttendanceRate,
-          upcomingClasses: previousUpcomingClasses,
-          totalClasses: previousTotalClasses,
-        });
-
-        // Calcular presença por gênero
-        const maleAttendance = attendanceData?.filter(a => {
-          const gender = (a.student as any)?.gender;
-          return gender === 'male' && (a.is_present === true || a.is_present === 'true' || a.is_present === 1);
-        }).length || 0;
-
-        const femaleAttendance = attendanceData?.filter(a => {
-          const gender = (a.student as any)?.gender;
-          return gender === 'female' && (a.is_present === true || a.is_present === 'true' || a.is_present === 1);
-        }).length || 0;
-
-        const finalStats = {
-          totalStudents,
-          activeStudents,
-          totalClasses,
-          completedClasses,
-          upcomingClasses,
-          totalAttendance,
-          attendanceRate: Math.round(attendanceRate * 100) / 100,
-          maleStudents,
-          femaleStudents,
-          maleAttendance,
-          femaleAttendance,
-        };
-
-        console.log('📊 Definindo estatísticas finais:', finalStats);
-        setStats(finalStats);
-
-        // Buscar aulas recentes
-        const { data: recentClassesData } = await supabase
-          .from('musicalizacao_classes')
-          .select('id, title, class_date, status')
-          .order('class_date', { ascending: false })
-          .limit(5);
-
-        setRecentClasses(recentClassesData || []);
-
-        // Buscar atividades recentes (presenças registradas)
-        const { data: recentAttendance } = await supabase
-          .from('musicalizacao_attendance')
-          .select(`
-            id,
-            recorded_at,
-            is_present,
-            class:musicalizacao_classes!class_id (title),
-            student:musicalizacao_students!student_id (full_name)
-          `)
-          .order('recorded_at', { ascending: false })
-          .limit(10);
-
-        setRecentActivities(recentAttendance || []);
-
-        // Buscar alunos com 3+ faltas consecutivas
-        // Primeiro, buscar todas as aulas completadas ordenadas por data
         const { data: completedClassesForAbsences, error: completedClassesError } = await supabase
           .from('musicalizacao_classes')
           .select('id, class_date, title, status')
           .eq('status', 'completed')
           .order('class_date', { ascending: true });
 
-        console.log('Aulas completadas encontradas:', completedClassesForAbsences?.length || 0);
-        if (completedClassesError) {
-          console.error('Erro ao buscar aulas completadas:', completedClassesError);
-        }
-        if (completedClassesForAbsences) {
-          console.log('Detalhes das aulas completadas:', completedClassesForAbsences.map((c: any) => ({
-            id: c.id,
-            title: c.title,
-            date: c.class_date,
-            status: c.status
-          })));
-        }
+      if (completedClassesError || !completedClassesForAbsences || completedClassesForAbsences.length === 0) {
+        setStudentsWithConsecutiveAbsences([]);
+        return;
+      }
 
-        if (completedClassesForAbsences && completedClassesForAbsences.length > 0) {
-          // Buscar todas as presenças para essas aulas
           const classIds = completedClassesForAbsences.map((c: any) => c.id);
-          console.log('IDs das aulas completadas:', classIds);
-          
           const { data: allAttendance, error: attendanceError } = await supabase
             .from('musicalizacao_attendance')
             .select(`
@@ -627,21 +421,19 @@ export const HomeScreen: React.FC = () => {
             `)
             .in('class_id', classIds);
 
-          console.log('Presenças encontradas:', allAttendance?.length || 0);
-          if (attendanceError) {
-            console.error('Erro ao buscar presenças:', attendanceError);
-          }
+      if (attendanceError || !allAttendance || allAttendance.length === 0) {
+        setStudentsWithConsecutiveAbsences([]);
+        return;
+      }
 
-          if (allAttendance && allAttendance.length > 0) {
-            // Criar um mapa de class_id -> class_date para ordenação
+      // Criar mapa de datas
             const classDateMap = new Map<string, string>();
             completedClassesForAbsences.forEach((c: any) => {
               classDateMap.set(c.id, c.class_date);
             });
 
-            // Agrupar por aluno e verificar faltas consecutivas
+      // Agrupar por aluno
             const studentsMap = new Map<string, any[]>();
-            
             allAttendance.forEach((attendance: any) => {
               const studentId = attendance.student_id;
               if (!studentsMap.has(studentId)) {
@@ -655,70 +447,207 @@ export const HomeScreen: React.FC = () => {
               });
             });
 
-            console.log('Total de alunos com presenças:', studentsMap.size);
-
-            // Verificar cada aluno por faltas consecutivas
+      // Verificar faltas consecutivas
             const studentsWithAbsences: any[] = [];
-            
             studentsMap.forEach((attendances, studentId) => {
-              // Ordenar por data da aula
               attendances.sort((a, b) => {
                 const dateA = a.classDate ? new Date(a.classDate).getTime() : 0;
                 const dateB = b.classDate ? new Date(b.classDate).getTime() : 0;
                 return dateA - dateB;
               });
 
-              // Verificar sequência de faltas consecutivas nas ÚLTIMAS aulas
-              // Verificar do final para o início para pegar as faltas mais recentes
               let consecutiveAbsences = 0;
-              
-              // Log para debug - mostrar todas as presenças ordenadas
-              const student = attendances[0].student;
-              console.log(`\n=== Verificando aluno: ${student?.full_name || 'Desconhecido'} ===`);
-              console.log('Todas as presenças ordenadas por data:', attendances.map((a: any) => ({
-                date: a.classDate,
-                isAbsent: a.isAbsent,
-                classId: a.class_id
-              })));
-              
-              // Verificar do final para o início (últimas faltas consecutivas)
               for (let i = attendances.length - 1; i >= 0; i--) {
                 if (attendances[i].isAbsent) {
                   consecutiveAbsences++;
-                  console.log(`  Falta ${consecutiveAbsences} na aula de ${attendances[i].classDate}`);
                 } else {
-                  // Se encontrou uma presença, parar de contar (só conta faltas consecutivas no final)
-                  console.log(`  Presença encontrada na aula de ${attendances[i].classDate} - parando contagem`);
                   break;
                 }
               }
 
-              console.log(`Total de faltas consecutivas: ${consecutiveAbsences}`);
-
-              // Se tiver 3 ou mais faltas consecutivas nas últimas aulas, adicionar à lista
-              if (consecutiveAbsences >= 3) {
-                if (student) {
-                  console.log(`✅ Aluno ${student.full_name} adicionado à lista com ${consecutiveAbsences} faltas consecutivas`);
+        if (consecutiveAbsences >= 3 && attendances[0]?.student) {
                   studentsWithAbsences.push({
                     studentId,
-                    studentName: student.full_name,
-                    consecutiveAbsences: consecutiveAbsences,
+            studentName: attendances[0].student.full_name,
+            consecutiveAbsences,
                   });
-                }
               }
             });
 
-            console.log('Alunos com 3+ faltas consecutivas:', studentsWithAbsences);
-            console.log('Total de alunos encontrados:', studentsWithAbsences.length);
             setStudentsWithConsecutiveAbsences(studentsWithAbsences);
-          } else {
-            console.log('Nenhuma presença encontrada para aulas completadas');
+    } catch (error) {
+      console.error('Erro ao carregar faltas consecutivas:', error);
             setStudentsWithConsecutiveAbsences([]);
           }
-        } else {
-          console.log('Nenhuma aula completada encontrada');
-          setStudentsWithConsecutiveAbsences([]);
-        }
+  }, []);
+
+  // Função para carregar dados do dashboard
+  const loadDashboardData = useCallback(async () => {
+    if (!profile) {
+        setLoading(false);
+      return;
+    }
+
+    let timeoutId: NodeJS.Timeout | null = null;
+
+      try {
+        setLoading(true);
+
+      // Timeout reduzido para 5 segundos
+      timeoutId = setTimeout(() => {
+        console.warn('⏱️ Timeout no carregamento - desativando loading');
+        setLoading(false);
+        timeoutId = null;
+      }, 5000);
+
+      // Verificar sessão antes de fazer requisições
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error('❌ Erro de sessão:', sessionError);
+        if (timeoutId) clearTimeout(timeoutId);
+        setLoading(false);
+        return;
+      }
+
+      // Calcular períodos
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+      const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
+      const sevenDaysAgoISO = sevenDaysAgo.toISOString();
+      const fourteenDaysAgoISO = fourteenDaysAgo.toISOString();
+
+      // Fazer todas as requisições principais em paralelo
+      const [
+        { data: studentsData, error: studentsError },
+        { data: classesData, error: classesError },
+        { data: attendanceData, error: attendanceError },
+        { data: previousClassesData },
+        { data: previousAttendanceData },
+        { data: recentClassesData },
+        { data: recentAttendance },
+      ] = await Promise.all([
+        supabase
+          .from('musicalizacao_students')
+          .select('id, is_active, gender'),
+        supabase
+          .from('musicalizacao_classes')
+          .select('id, status, class_date')
+          .gte('class_date', sevenDaysAgoStr),
+        supabase
+          .from('musicalizacao_attendance')
+          .select(`
+            id,
+            is_present,
+            recorded_at,
+            student:musicalizacao_students!student_id (gender)
+          `)
+          .gte('recorded_at', sevenDaysAgoISO),
+        supabase
+          .from('musicalizacao_classes')
+          .select('id, status, class_date')
+          .gte('class_date', fourteenDaysAgoStr)
+          .lt('class_date', sevenDaysAgoStr),
+        supabase
+          .from('musicalizacao_attendance')
+          .select('id, is_present, recorded_at')
+          .gte('recorded_at', fourteenDaysAgoISO)
+          .lt('recorded_at', sevenDaysAgoISO),
+        supabase
+          .from('musicalizacao_classes')
+          .select('id, title, class_date, status')
+          .order('class_date', { ascending: false })
+          .limit(5),
+        supabase
+          .from('musicalizacao_attendance')
+          .select(`
+            id,
+            recorded_at,
+            is_present,
+            class:musicalizacao_classes!class_id (title),
+            student:musicalizacao_students!student_id (full_name)
+          `)
+          .order('recorded_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      // Tratar erros
+      if (studentsError) console.error('Erro ao buscar alunos:', studentsError);
+      if (classesError) console.error('Erro ao buscar aulas:', classesError);
+      if (attendanceError) console.error('Erro ao buscar presenças:', attendanceError);
+
+      // Processar dados de alunos
+        const totalStudents = studentsData?.length || 0;
+        const activeStudents = studentsData?.filter(s => {
+          const isActive = s.is_active === true || s.is_active === 'true' || s.is_active === 1;
+          return isActive;
+        }).length || 0;
+        const maleStudents = studentsData?.filter(s => s.gender === 'male').length || 0;
+        const femaleStudents = studentsData?.filter(s => s.gender === 'female').length || 0;
+
+      // Processar dados de aulas
+        const totalClasses = classesData?.length || 0;
+        const completedClasses = classesData?.filter(c => c.status === 'completed').length || 0;
+        const upcomingClasses = classesData?.filter(c => c.status === 'scheduled').length || 0;
+
+      // Processar dados de presença
+        const totalAttendance = attendanceData?.length || 0;
+        const presentCount = attendanceData?.filter(a => {
+          const isPresent = a.is_present === true || a.is_present === 'true' || a.is_present === 1;
+          return isPresent;
+        }).length || 0;
+        const attendanceRate = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
+
+      // Processar dados do período anterior
+      const previousTotalClasses = previousClassesData?.length || 0;
+      const previousUpcomingClasses = previousClassesData?.filter(c => c.status === 'scheduled').length || 0;
+      const previousTotalAttendance = previousAttendanceData?.length || 0;
+      const previousPresentCount = previousAttendanceData?.filter(a => {
+        const isPresent = a.is_present === true || a.is_present === 'true' || a.is_present === 1;
+        return isPresent;
+      }).length || 0;
+      const previousAttendanceRate = previousTotalAttendance > 0 ? (previousPresentCount / previousTotalAttendance) * 100 : 0;
+
+      setPreviousStats({
+        totalStudents,
+        attendanceRate: previousAttendanceRate,
+        upcomingClasses: previousUpcomingClasses,
+        totalClasses: previousTotalClasses,
+      });
+
+        // Calcular presença por gênero
+        const maleAttendance = attendanceData?.filter(a => {
+          const gender = (a.student as any)?.gender;
+          return gender === 'male' && (a.is_present === true || a.is_present === 'true' || a.is_present === 1);
+        }).length || 0;
+
+        const femaleAttendance = attendanceData?.filter(a => {
+          const gender = (a.student as any)?.gender;
+          return gender === 'female' && (a.is_present === true || a.is_present === 'true' || a.is_present === 1);
+        }).length || 0;
+
+      // Definir estatísticas principais
+      setStats({
+          totalStudents,
+          activeStudents,
+          totalClasses,
+          completedClasses,
+          upcomingClasses,
+          totalAttendance,
+          attendanceRate: Math.round(attendanceRate * 100) / 100,
+          maleStudents,
+          femaleStudents,
+          maleAttendance,
+          femaleAttendance,
+      });
+
+      // Definir dados recentes
+      setRecentClasses(recentClassesData || []);
+      setRecentActivities(recentAttendance || []);
+
+      // Carregar faltas consecutivas de forma assíncrona (não bloqueia a UI)
+      loadConsecutiveAbsences();
     } catch (error) {
       console.error('❌ Erro ao carregar dados do dashboard:', error);
       if (error instanceof Error) {
@@ -748,17 +677,16 @@ export const HomeScreen: React.FC = () => {
       });
       setRecentActivities([]);
       setRecentClasses([]);
-      setStudentsWithConsecutiveAbsences([]);
-    } finally {
+            setStudentsWithConsecutiveAbsences([]);
+      } finally {
       // Limpar timeout se ainda estiver ativo
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
       // Garantir que o loading sempre seja desativado
-      setLoading(false);
-      console.log('✅ Carregamento de dados finalizado');
-    }
-  }, [profile]);
+        setLoading(false);
+      }
+  }, [profile, loadConsecutiveAbsences]);
 
   // Carregar dados quando o perfil estiver disponível
   useEffect(() => {
@@ -1137,9 +1065,16 @@ export const HomeScreen: React.FC = () => {
                       <View style={styles.analyticsProgressHeader}>
                         <View style={styles.classStatusLegendItem}>
                           <View style={[styles.classStatusDot, { backgroundColor: '#10B981' }]} />
-                          <Text style={styles.analyticsProgressLabel}>Completadas</Text>
+                          <Text 
+                            style={styles.analyticsProgressLabel}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >Completadas</Text>
                         </View>
-                        <Text style={styles.analyticsProgressValue}>{stats.completedClasses}</Text>
+                        <Text 
+                          style={styles.analyticsProgressValue}
+                          numberOfLines={1}
+                        >{stats.completedClasses}</Text>
                       </View>
                       {stats.totalClasses > 0 && (
                         <View style={styles.classStatusProgressBar}>
@@ -1155,7 +1090,11 @@ export const HomeScreen: React.FC = () => {
                         </View>
                       )}
                       {stats.totalClasses > 0 && (
-                        <Text style={styles.classStatusPercentage}>
+                        <Text 
+                          style={styles.classStatusPercentage}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
                           {Math.round((stats.completedClasses / stats.totalClasses) * 100)}% do total
                         </Text>
                       )}
@@ -1167,9 +1106,16 @@ export const HomeScreen: React.FC = () => {
                       <View style={styles.analyticsProgressHeader}>
                         <View style={styles.classStatusLegendItem}>
                           <View style={[styles.classStatusDot, { backgroundColor: '#F59E0B' }]} />
-                          <Text style={styles.analyticsProgressLabel}>Agendadas</Text>
+                          <Text 
+                            style={styles.analyticsProgressLabel}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >Agendadas</Text>
                         </View>
-                        <Text style={styles.analyticsProgressValue}>{stats.upcomingClasses}</Text>
+                        <Text 
+                          style={styles.analyticsProgressValue}
+                          numberOfLines={1}
+                        >{stats.upcomingClasses}</Text>
                       </View>
                       {stats.totalClasses > 0 && (
                         <View style={styles.classStatusProgressBar}>
@@ -1185,7 +1131,11 @@ export const HomeScreen: React.FC = () => {
                         </View>
                       )}
                       {stats.totalClasses > 0 && (
-                        <Text style={styles.classStatusPercentage}>
+                        <Text 
+                          style={styles.classStatusPercentage}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
                           {Math.round((stats.upcomingClasses / stats.totalClasses) * 100)}% do total
                         </Text>
                       )}
@@ -1195,8 +1145,15 @@ export const HomeScreen: React.FC = () => {
 
                     <View style={styles.classStatusSummary}>
                       <View style={styles.classStatusSummaryItem}>
-                        <Text style={styles.classStatusSummaryLabel}>Taxa de Conclusão</Text>
-                        <Text style={styles.classStatusSummaryValue}>
+                        <Text 
+                          style={styles.classStatusSummaryLabel}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >Taxa de Conclusão</Text>
+                        <Text 
+                          style={styles.classStatusSummaryValue}
+                          numberOfLines={1}
+                        >
                           {stats.totalClasses > 0 ? Math.round((stats.completedClasses / stats.totalClasses) * 100) : 0}%
                         </Text>
                       </View>
@@ -1925,6 +1882,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
   },
   classStatusDot: {
     width: 8,
@@ -1936,6 +1896,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#9CA3AF',
     marginTop: spacing.xs,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   classStatusDivider: {
     height: 1,
@@ -1992,11 +1955,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#6B7280',
+    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   analyticsProgressValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
+    flexShrink: 0,
   },
   analyticsProgressBar: {
     height: 8,
