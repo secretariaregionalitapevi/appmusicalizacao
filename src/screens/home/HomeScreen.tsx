@@ -1042,118 +1042,58 @@ export const HomeScreen: React.FC = () => {
             <View style={[styles.analyticsCard, isMobile && styles.analyticsCardMobile]}>
               <Text style={styles.analyticsCardTitle}>AULAS POR STATUS</Text>
               <View style={styles.analyticsContent}>
-                <View style={styles.classStatusWrapper}>
+                <View style={styles.genderChartWrapper}>
                   {/* Pie Chart */}
-                  <View style={styles.classStatusChart}>
+                  <View style={styles.donutChartContainer}>
                     <PieChart
                       completed={stats.completedClasses}
                       scheduled={stats.upcomingClasses}
                       total={stats.totalClasses}
                     />
-                    <View style={styles.classStatusChartCenter}>
-                      <Text style={styles.classStatusChartTotal}>{stats.totalClasses}</Text>
-                      <Text style={styles.classStatusChartLabel}>Total de Aulas</Text>
+                    <View style={styles.donutChartCenter}>
+                      <Text style={styles.donutChartTotal}>{stats.totalClasses}</Text>
+                      <Text style={styles.donutChartLabel}>Total de Aulas</Text>
                     </View>
                   </View>
                   
-                  {/* Legend e Detalhes */}
-                  <View style={[
-                    styles.classStatusLegend,
-                    isMobile && { flex: 0, width: '100%', minWidth: 0, maxWidth: '100%' }
-                  ]}>
-                    <View style={styles.analyticsProgressItem}>
-                      <View style={styles.analyticsProgressHeader}>
-                        <View style={styles.classStatusLegendItem}>
-                          <View style={[styles.classStatusDot, { backgroundColor: '#10B981' }]} />
-                          <Text 
-                            style={styles.analyticsProgressLabel}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >Completadas</Text>
-                        </View>
-                        <Text 
-                          style={styles.analyticsProgressValue}
-                          numberOfLines={1}
-                        >{stats.completedClasses}</Text>
+                  {/* Legend */}
+                  <View style={styles.genderChartLegend}>
+                    <View style={styles.genderChartItem}>
+                      <View style={styles.genderChartHeader}>
+                        <View style={[styles.genderChartDot, { backgroundColor: '#10B981' }]} />
+                        <Text style={styles.genderChartLabel}>Completadas</Text>
                       </View>
-                      {stats.totalClasses > 0 && (
-                        <View style={styles.classStatusProgressBar}>
-                          <View 
-                            style={[
-                              styles.classStatusProgressFill, 
-                              { 
-                                width: `${(stats.completedClasses / stats.totalClasses) * 100}%`,
-                                backgroundColor: '#10B981'
-                              }
-                            ]} 
-                          />
-                        </View>
-                      )}
-                      {stats.totalClasses > 0 && (
-                        <Text 
-                          style={styles.classStatusPercentage}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {Math.round((stats.completedClasses / stats.totalClasses) * 100)}% do total
-                        </Text>
-                      )}
+                      <View style={styles.genderChartStats}>
+                        <Text style={styles.genderChartValue}>{stats.completedClasses}</Text>
+                        {stats.totalClasses > 0 && (
+                          <Text style={styles.genderChartPercentage}>
+                            {Math.round((stats.completedClasses / stats.totalClasses) * 100)}% do total
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     
-                    <View style={styles.classStatusDivider} />
+                    <View style={styles.genderChartDivider} />
                     
-                    <View style={styles.analyticsProgressItem}>
-                      <View style={styles.analyticsProgressHeader}>
-                        <View style={styles.classStatusLegendItem}>
-                          <View style={[styles.classStatusDot, { backgroundColor: '#F59E0B' }]} />
-                          <Text 
-                            style={styles.analyticsProgressLabel}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >Agendadas</Text>
-                        </View>
-                        <Text 
-                          style={styles.analyticsProgressValue}
-                          numberOfLines={1}
-                        >{stats.upcomingClasses}</Text>
+                    <View style={styles.genderChartItem}>
+                      <View style={styles.genderChartHeader}>
+                        <View style={[styles.genderChartDot, { backgroundColor: '#F59E0B' }]} />
+                        <Text style={styles.genderChartLabel}>Agendadas</Text>
                       </View>
-                      {stats.totalClasses > 0 && (
-                        <View style={styles.classStatusProgressBar}>
-                          <View 
-                            style={[
-                              styles.classStatusProgressFill, 
-                              { 
-                                width: `${(stats.upcomingClasses / stats.totalClasses) * 100}%`,
-                                backgroundColor: '#F59E0B'
-                              }
-                            ]} 
-                          />
-                        </View>
-                      )}
-                      {stats.totalClasses > 0 && (
-                        <Text 
-                          style={styles.classStatusPercentage}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {Math.round((stats.upcomingClasses / stats.totalClasses) * 100)}% do total
-                        </Text>
-                      )}
+                      <View style={styles.genderChartStats}>
+                        <Text style={styles.genderChartValue}>{stats.upcomingClasses}</Text>
+                        {stats.totalClasses > 0 && (
+                          <Text style={styles.genderChartPercentage}>
+                            {Math.round((stats.upcomingClasses / stats.totalClasses) * 100)}% do total
+                          </Text>
+                        )}
+                      </View>
                     </View>
-
-                    <View style={styles.classStatusDivider} />
-
-                    <View style={styles.classStatusSummary}>
-                      <View style={styles.classStatusSummaryItem}>
-                        <Text 
-                          style={styles.classStatusSummaryLabel}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >Taxa de Conclusão</Text>
-                        <Text 
-                          style={styles.classStatusSummaryValue}
-                          numberOfLines={1}
-                        >
+                    
+                    <View style={styles.genderChartSummary}>
+                      <View style={styles.genderChartSummaryItem}>
+                        <Text style={styles.genderChartSummaryLabel}>Taxa de Conclusão</Text>
+                        <Text style={styles.genderChartSummaryValue}>
                           {stats.totalClasses > 0 ? Math.round((stats.completedClasses / stats.totalClasses) * 100) : 0}%
                         </Text>
                       </View>
