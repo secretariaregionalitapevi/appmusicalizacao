@@ -531,14 +531,39 @@ textarea:focus {
 .sac-page-footer {
   margin-top: 30px;
   text-align: center;
-  font-size: 11px; /* Smaller footer */
-  color: #94a3b8;
-  line-height: 1.5;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .sac-page-footer a {
-  color: #64748b;
+  color: #1e4b7a;
   text-decoration: none;
+}
+
+.sac-page-footer strong {
+  font-weight: 400;
+}
+
+.sac-page-footer .footer-brand {
+  display: block;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.sac-page-footer .footer-ccb {
+  display: block;
+  font-size: 13px;
+  color: #1e4b7a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sac-page-footer .footer-region {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
 }
 
 .password-toggle {

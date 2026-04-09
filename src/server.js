@@ -241,6 +241,109 @@ function buildDuplicateDetails(tipo, entry) {
   };
 }
 
+function formatDateBR(value) {
+  const normalized = normalizeDate(value);
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return String(value || "").trim() || "--/--/----";
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function getRecitativoComum(payload = {}) {
+  return String(payload.localidade || payload.comum || payload.comum_congregacao || "").trim();
+}
+
+function getRecitativoMunicipio(payload = {}) {
+  return String(payload.cidade || payload.municipio || "").trim();
+}
+
+function buildRecitativoDuplicateDetails(entry) {
+  const existing = entry?.payload || {};
+
+  return {
+    comum: getRecitativoComum(existing) || "Comum não informada",
+    municipio: getRecitativoMunicipio(existing) || "Município não informado",
+    dataReuniao: formatDateBR(existing.data_reuniao),
+    createdAt: entry?.createdAt || existing.created_at || existing.createdAt || ""
+  };
+}
+
+async function readSavedRecitativosByDate(dateValue) {
+  const normalizedDate = normalizeDate(dateValue);
+  const localEntries = (await readLocalEntries()).filter((entry) => (
+    entry.tipo === "recitativo" &&
+    normalizeDate(entry.payload?.data_reuniao) === normalizedDate
+  ));
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return localEntries;
+  }
+
+  const table = process.env.SUPABASE_TABLE_RECITATIVOS || "rjm_recitativos";
+  const candidateDates = [...new Set([normalizedDate, formatDateBR(normalizedDate)].filter(Boolean))];
+  const remoteEntries = [];
+
+  for (const candidateDate of candidateDates) {
+    const url = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}`);
+    url.searchParams.set("select", "*");
+    url.searchParams.set("data_reuniao", `eq.${candidateDate}`);
+    url.searchParams.set("limit", "200");
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      throw new Error(`supabase_recitativo_duplicate_check_failed:${response.status}:${bodyText}`);
+    }
+
+    const rows = await response.json();
+    for (const row of rows) {
+      remoteEntries.push({
+        id: row.id || "",
+        tipo: "recitativo",
+        payload: row,
+        createdAt: row.created_at || row.createdAt || ""
+      });
+    }
+  }
+
+  const deduped = new Map();
+  for (const entry of [...remoteEntries, ...localEntries]) {
+    const key = `${entry.id}::${JSON.stringify(entry.payload || {})}`;
+    if (!deduped.has(key)) deduped.set(key, entry);
+  }
+
+  return [...deduped.values()];
+}
+
+function detectRecitativoDuplicate(payload, entries) {
+  const common = normalizeText(getRecitativoComum(payload));
+  const meetingDate = normalizeDate(payload.data_reuniao);
+  if (!common || !meetingDate) return { duplicate: false };
+
+  for (const entry of entries) {
+    const existing = entry.payload || {};
+    const existingCommon = normalizeText(getRecitativoComum(existing));
+    const existingMeetingDate = normalizeDate(existing.data_reuniao);
+
+    if (common === existingCommon && meetingDate === existingMeetingDate) {
+      return {
+        duplicate: true,
+        matchedId: entry.id,
+        reason: "comum_e_data",
+        matchedEntry: entry
+      };
+    }
+  }
+
+  return { duplicate: false };
+}
+
 async function readSavedEntries() {
   const localEntries = await readLocalEntries();
 
@@ -634,7 +737,28 @@ async function handleRequest(req, res) {
 
     if (req.method === "POST" && pathname === "/api/recitativos") {
       const payload = await readJsonBody(req);
-      
+      const missing = ["data_reuniao", "localidade"].filter((field) => {
+        const value = payload[field];
+        return value === undefined || value === null || String(value).trim() === "";
+      });
+
+      if (missing.length > 0) {
+        sendJson(res, 400, { error: "Campos obrigatórios ausentes.", missing });
+        return;
+      }
+
+      const existingRecitativos = await readSavedRecitativosByDate(payload.data_reuniao);
+      const duplicateCheck = detectRecitativoDuplicate(payload, existingRecitativos);
+      if (duplicateCheck.duplicate) {
+        sendJson(res, 409, {
+          error: "Esta Comum já realizou um lançamento nesta data. Procure a coordenação.",
+          duplicateOf: duplicateCheck.matchedId,
+          duplicateReason: duplicateCheck.reason,
+          duplicate: buildRecitativoDuplicateDetails(duplicateCheck.matchedEntry)
+        });
+        return;
+      }
+
       // Salvar localmente (se habilitado no .env)
       const saved = await saveSubmission("recitativo", payload);
 
@@ -758,6 +882,11 @@ async function handleRequest(req, res) {
 
     if (typeof error.message === "string" && error.message.startsWith("supabase_duplicate_check_failed:")) {
       sendJson(res, 502, { error: "Falha ao validar duplicidade no Supabase." });
+      return;
+    }
+
+    if (typeof error.message === "string" && error.message.startsWith("supabase_recitativo_duplicate_check_failed:")) {
+      sendJson(res, 502, { error: "Falha ao validar duplicidade do lançamento no Supabase." });
       return;
     }
 
