@@ -151,9 +151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('recitativosForm');
   let isSubmitting = false;
 
-  const submitControls = Array.from(form.querySelectorAll('button, input, select, textarea'));
   const setSubmittingState = (submitting) => {
-    submitControls.forEach((control) => {
+    const controls = Array.from(form.querySelectorAll('button, input, select, textarea'));
+    controls.forEach((control) => {
       if (control.id === 'selectedDate') return;
       control.disabled = submitting;
     });
@@ -177,13 +177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (isSubmitting) return;
 
-    isSubmitting = true;
-    setSubmittingState(true);
-
     const user = window.currentUser;
     if (!user) {
-      isSubmitting = false;
-      setSubmittingState(false);
       Swal.fire('Erro', 'Você precisa estar logado para enviar.', 'error');
       return;
     }
@@ -192,6 +187,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rawData = Object.fromEntries(formData.entries());
     const entries = [];
     const count = config.type === 'all' ? config.sundays.length : 1;
+
+    isSubmitting = true;
+    setSubmittingState(true);
 
     for (let index = 0; index < count; index += 1) {
       const dateLabel = config.type === 'all' ? rawData[`date_${index}`] : selectedDateSelect.value;
@@ -202,10 +200,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      entries.push({
+      // Fallback: se a chave não estiver no rawData, tenta pegar via match direto no form
+      let valMeninas = rawData[`meninas_${index}`];
+      let valMeninos = rawData[`meninos_${index}`];
+
+      if (valMeninas === undefined || valMeninas === '') {
+        const inputM = form.querySelector(`input[name="meninas_${index}"]`);
+        if (inputM) valMeninas = inputM.value;
+      }
+      if (valMeninos === undefined || valMeninos === '') {
+        const inputH = form.querySelector(`input[name="meninos_${index}"]`);
+        if (inputH) valMeninos = inputH.value;
+      }
+
+      const meninas = parseInt(String(valMeninas || '0').trim() || '0', 10);
+      const meninos = parseInt(String(valMeninos || '0').trim() || '0', 10);
+
+      const entry = {
         data_reuniao: formatToISO(dateLabel),
-        meninas: parseInt(rawData[`meninas_${index}`] || 0, 10),
-        meninos: parseInt(rawData[`meninos_${index}`] || 0, 10),
+        meninas,
+        meninos,
         colaboradoras: 0,
         livro: '-',
         capitulo: '-',
@@ -214,7 +228,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         instrutora: window.auxiliarFullName || user.user_metadata?.full_name || user.email.split('@')[0],
         localidade: config.comum,
         cidade: config.municipio
-      });
+      };
+
+      console.log(`[Cadastro EBI] Coletando Payload Aula ${index + 1}:`, entry);
+      entries.push(entry);
     }
 
     Swal.fire({
