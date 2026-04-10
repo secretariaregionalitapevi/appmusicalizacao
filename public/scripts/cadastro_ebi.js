@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     config.sundays.forEach((dateBR, index) => {
       const [day, month, year] = dateBR.split('/');
       const iso = `${year}-${month}-${day}`;
-      container.appendChild(createCard(`Aula ${index + 1}`, index, iso));
+      container.appendChild(createCard(`Reunião das Crianças ${index + 1}`, index, iso));
     });
   } else {
     datePickerRow.classList.remove('hidden');
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         cidade: config.municipio
       };
 
-      console.log(`[Cadastro EBI] Coletando Payload Aula ${index + 1}:`, entry);
+      console.log(`[Cadastro EBI] Coletando Payload Reunião das Crianças ${index + 1}:`, entry);
       entries.push(entry);
     }
 
