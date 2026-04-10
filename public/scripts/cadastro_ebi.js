@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // No mensal, cada aula pode ter sua data ajustada. No avulso, a data
     // já é escolhida no topo e apenas reaproveitada no payload.
     const dateField = initialISO
-      ? `<label style="font-size: 13px; color: #64748b; margin-bottom: 5px; display: block;">Confirme a data desta aula:</label>
+      ? `<label style="font-size: 13px; color: #64748b; margin-bottom: 5px; display: block;">Confirme a data:</label>
          <input type="date" name="date_${index}" value="${initialISO}" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px; font-family:inherit;">`
       : `<input type="hidden" name="date_${index}" value="${title.replace('Data: ', '')}">`;
 
