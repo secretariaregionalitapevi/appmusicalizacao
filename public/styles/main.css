@@ -234,7 +234,7 @@ textarea:focus {
 
 @media (max-width: 400px) {
   .grid-counts {
-    grid-template-columns: repeat(3, 1fr); /* ForÃ§a 3 colunas no iPhone 8/SE */
+    grid-template-columns: repeat(3, 1fr); /* Força 3 colunas no iPhone 8/SE */
     gap: 6px;
   }
   .grid-counts label {
