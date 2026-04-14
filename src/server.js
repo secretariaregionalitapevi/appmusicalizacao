@@ -282,7 +282,8 @@ async function readSavedRecitativosByDate(dateValue) {
   const candidateDates = [...new Set([normalizedDate, formatDateBR(normalizedDate)].filter(Boolean))];
   const remoteEntries = [];
 
-  for (const candidateDate of candidateDates) {
+  for (const candidateDate of [normalizedDate]) {
+    if (!candidateDate) continue;
     const url = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}`);
     url.searchParams.set("select", "*");
     url.searchParams.set("data_reuniao", `eq.${candidateDate}`);
@@ -298,6 +299,7 @@ async function readSavedRecitativosByDate(dateValue) {
 
     if (!response.ok) {
       const bodyText = await response.text();
+      console.error(`[DEBUG] Supabase Duplicate Check Error - Table: ${table}, Status: ${response.status}, Body: ${bodyText}`);
       throw new Error(`supabase_recitativo_duplicate_check_failed:${response.status}:${bodyText}`);
     }
 
@@ -581,13 +583,16 @@ async function serveStatic(reqPath, res) {
   fs.createReadStream(filePath).pipe(res);
 }
 
-function routeToPage(pathname) {
-  if (pathname === "/") return "index.html";
-  if (pathname === "/login.html") return "login.html";
-  if (pathname === "/registro.html" || pathname === "/registro") return "registro.html";
-  if (pathname === "/cadastro") return "cadastro.html";
-  if (pathname === "/cadastro/crianca") return "cadastro.html";
-  if (pathname === "/cadastro/monitor") return "cadastro.html";
+function routeToPage(rawPathname) {
+  const pathname = rawPathname.replace(/\/$/, "") || "/";
+  const p = pathname.toLowerCase();
+
+  if (p === "/") return "index.html";
+  if (p === "/login.html" || p === "/login") return "login.html";
+  if (p === "/registro.html" || p === "/registro") return "registro.html";
+  if (p === "/cadastro.html" || p === "/cadastro") return "cadastro.html";
+  if (p === "/cadastro/crianca") return "cadastro.html";
+  if (p === "/cadastro/monitor") return "cadastro.html";
   return null;
 }
 
@@ -595,6 +600,9 @@ async function handleRequest(req, res) {
   const host = req.headers.host || "localhost";
   const url = new URL(req.url, `http://${host}`);
   const pathname = url.pathname;
+  
+  // Log de Debug para resolver erro de rota
+  console.log(`[Server] ${req.method} ${pathname}`);
 
   try {
     // --- ROTA DE PERFIL (GET/POST) - Prioridade Máxima ---
@@ -735,8 +743,9 @@ async function handleRequest(req, res) {
       return;
     }
 
-    if (req.method === "POST" && pathname === "/api/recitativos") {
+    if (req.method === "POST" && pathname === "/api/atividades") {
       const payload = await readJsonBody(req);
+      console.log("[DEBUG] Recebendo Payload no Servidor:", JSON.stringify(payload, null, 2));
       const missing = ["data_reuniao", "localidade"].filter((field) => {
         const value = payload[field];
         return value === undefined || value === null || String(value).trim() === "";

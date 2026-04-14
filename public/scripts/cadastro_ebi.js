@@ -12,35 +12,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.updateSummaryWithName = async (user) => {
     let name = user.user_metadata?.full_name;
-
-    // Se não tiver no metadata, tenta buscar na tabela rjm_auxiliares via API.
     if (!name) {
       try {
         const res = await fetch(`/api/profile?id=${user.id}`);
         const profile = await res.json();
-        if (profile.full_name) {
-          name = profile.full_name;
-        }
+        if (profile.full_name) name = profile.full_name;
       } catch (err) {
-        console.error('Erro ao buscar nome completo:', err);
+        console.error('Erro ao buscar nome:', err);
       }
     }
-
     if (!name) name = user.email?.split('@')[0] || '...';
-
     if (name.toLowerCase() === 'ricardograngeiro') {
       name = 'Ricardo Grangeiro';
-    } else if (name.includes('.')) {
-      name = name
-        .split('.')
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-    } else if (!user.user_metadata?.full_name) {
-      name = name.charAt(0).toUpperCase() + name.slice(1);
+    } else {
+      name = name.split('.').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
     }
-
     window.auxiliarFullName = name;
-
     summary.innerHTML = `
       <strong>Mês:</strong> ${config.mes} |
       <strong>Município:</strong> ${config.municipio} |
@@ -56,12 +43,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function createCard(title, index, initialISO = null) {
     const card = document.createElement('div');
     card.className = 'sunday-card';
-
-    // No mensal, cada aula pode ter sua data ajustada. No avulso, a data
-    // já é escolhida no topo e apenas reaproveitada no payload.
     const dateField = initialISO
       ? `<label style="font-size: 13px; color: #64748b; margin-bottom: 5px; display: block;">Confirme a data:</label>
-         <input type="date" name="date_${index}" value="${initialISO}" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px; font-family:inherit;">`
+         <input type="date" name="date_${index}" value="${initialISO}" required class="form-control">`
       : `<input type="hidden" name="date_${index}" value="${title.replace('Data: ', '')}">`;
 
     card.innerHTML = `
@@ -81,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <input type="number" name="total_presentes_${index}" value="0" readonly class="count-input total-field">
         </div>
       </div>
-
       <div class="suspension-row">
         <label class="suspension-toggle">
           <input type="checkbox" name="suspenso_${index}" class="suspension-checkbox">
@@ -94,9 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <option value="Reforma">Reforma</option>
             <option value="Culto de Mocidade">Culto de Mocidade</option>
             <option value="Evento Regional">Evento Regional</option>
-            <option value="Outros">Outros (especificar)</option>
+            <option value="Outros">Outros</option>
           </select>
-          <input type="text" name="justificativa_custom_${index}" class="form-control other-justification hidden" placeholder="Descreva brevemente..." maxLength="50">
+          <input type="text" name="justificativa_custom_${index}" class="form-control other-justification hidden" placeholder="Descreva...">
         </div>
       </div>
     `;
@@ -112,33 +95,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isSuspended = e.target.checked;
       card.classList.toggle('suspension-active', isSuspended);
       justificationArea.classList.toggle('hidden', !isSuspended);
-      
       inputs.forEach(input => {
         input.disabled = isSuspended;
-        if (isSuspended) {
-          input.value = '0';
-          input.dispatchEvent(new Event('input'));
-        }
+        if (isSuspended) { input.value = '0'; input.dispatchEvent(new Event('input')); }
       });
-
-      if (isSuspended) {
-        justificationSelect.required = true;
-      } else {
-        justificationSelect.required = false;
-        justificationCustom.required = false;
-      }
+      justificationSelect.required = isSuspended;
     });
 
     justificationSelect.addEventListener('change', (e) => {
       const val = e.target.value;
-      // Estilo especial para Reforma
-      if (val === 'Reforma') {
-        justificationSelect.classList.add('reforma');
-      } else {
-        justificationSelect.classList.remove('reforma');
-      }
-
-      // Mostrar campo customizado se for "Outros"
       if (val === 'Outros') {
         justificationCustom.classList.remove('hidden');
         justificationCustom.required = true;
@@ -148,25 +113,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    inputs.forEach((input) => {
-      input.addEventListener('focus', () => {
-        if (input.value === '0') {
-          input.value = '';
-        }
-      });
-
-      input.addEventListener('blur', () => {
-        if (input.value === '') {
-          input.value = '0';
-          input.dispatchEvent(new Event('input'));
-        }
-      });
-
+    inputs.forEach(input => {
+      input.addEventListener('focus', () => { if (input.value === '0') input.value = ''; });
+      input.addEventListener('blur', () => { if (input.value === '') { input.value = '0'; input.dispatchEvent(new Event('input')); } });
       input.addEventListener('input', () => {
         let sum = 0;
-        inputs.forEach((field) => {
-          sum += parseInt(field.value || 0, 10);
-        });
+        inputs.forEach(f => sum += parseInt(f.value || 0, 10));
         totalField.value = sum;
       });
     });
@@ -177,73 +129,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (config.type === 'all') {
     config.sundays.forEach((dateBR, index) => {
       const [day, month, year] = dateBR.split('/');
-      const iso = `${year}-${month}-${day}`;
-      container.appendChild(createCard(`Reunião das Crianças ${index + 1}`, index, iso));
+      container.appendChild(createCard(`Reunião das Crianças ${index + 1}`, index, `${year}-${month}-${day}`));
     });
   } else {
     datePickerRow.classList.remove('hidden');
-
-    const formatISODate = (date) => {
-      const withZero = (value) => (value < 10 ? `0${value}` : String(value));
-      return `${date.getFullYear()}-${withZero(date.getMonth() + 1)}-${withZero(date.getDate())}`;
-    };
-
-    selectedDateSelect.value = formatISODate(new Date());
-
-    const updateCard = (isoDate) => {
+    selectedDateSelect.value = new Date().toISOString().split('T')[0];
+    const updateCard = (iso) => {
       container.innerHTML = '';
-      if (!isoDate) return;
-
-      const [year, month, day] = isoDate.split('-');
-      container.appendChild(createCard(`Data: ${day}/${month}/${year}`, 0));
+      if (!iso) return;
+      const [y, m, d] = iso.split('-');
+      container.appendChild(createCard(`Data: ${d}/${m}/${y}`, 0));
     };
-
     updateCard(selectedDateSelect.value);
-    selectedDateSelect.addEventListener('change', (event) => updateCard(event.target.value));
+    selectedDateSelect.addEventListener('change', (e) => updateCard(e.target.value));
   }
 
   const formatToISO = (dateStr) => {
-    if (!dateStr) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-
+    if (!dateStr || /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
     const match = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (match) return `${match[3]}-${match[2]}-${match[1]}`;
-
-    return dateStr;
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : dateStr;
   };
 
   const form = document.getElementById('recitativosForm');
   let isSubmitting = false;
 
-  const setSubmittingState = (submitting) => {
-    const controls = Array.from(form.querySelectorAll('button, input, select, textarea'));
-    controls.forEach((control) => {
-      if (control.id === 'selectedDate') return;
-      control.disabled = submitting;
+  const setSubmittingState = (st) => {
+    Array.from(form.querySelectorAll('button, input, select')).forEach(c => {
+      if (c.id !== 'selectedDate') c.disabled = st;
     });
-
-    const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-    submitButtons.forEach((button) => {
-      if (!button.dataset.originalLabel) {
-        button.dataset.originalLabel = button.tagName === 'INPUT' ? button.value : button.textContent;
-      }
-
-      if (button.tagName === 'INPUT') {
-        button.value = submitting ? 'Enviando...' : button.dataset.originalLabel;
-      } else {
-        button.textContent = submitting ? 'Enviando...' : button.dataset.originalLabel;
-      }
-    });
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.textContent = st ? 'Enviando...' : 'Finalizar e Enviar Presença';
   };
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
     if (isSubmitting) return;
 
     const user = window.currentUser;
     if (!user) {
-      Swal.fire('Erro', 'Você precisa estar logado para enviar.', 'error');
+      Swal.fire('Erro', 'Faça login novamente.', 'error');
       return;
     }
 
@@ -255,109 +179,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     isSubmitting = true;
     setSubmittingState(true);
 
-    for (let index = 0; index < count; index += 1) {
-      const dateLabel = config.type === 'all' ? rawData[`date_${index}`] : selectedDateSelect.value;
-      if (!dateLabel && config.type !== 'all') {
-        isSubmitting = false;
-        setSubmittingState(false);
-        Swal.fire('Aviso', 'Selecione a data.', 'warning');
-        return;
+    for (let i = 0; i < count; i++) {
+      const dateLabel = config.type === 'all' ? rawData[`date_${i}`] : selectedDateSelect.value;
+      const isSus = rawData[`suspenso_${i}`] === 'on';
+      let just = '-';
+      if (isSus) {
+        const pre = rawData[`justificativa_pre_${i}`];
+        just = pre === 'Outros' ? (rawData[`justificativa_custom_${i}`] || 'Outro') : pre;
       }
 
-      // Fallback: se a chave não estiver no rawData, tenta pegar via match direto no form
-      let valMeninas = rawData[`meninas_${index}`];
-      let valMeninos = rawData[`meninos_${index}`];
-
-      if (valMeninas === undefined || valMeninas === '') {
-        const inputM = form.querySelector(`input[name="meninas_${index}"]`);
-        if (inputM) valMeninas = inputM.value;
-      }
-      if (valMeninos === undefined || valMeninos === '') {
-        const inputH = form.querySelector(`input[name="meninos_${index}"]`);
-        if (inputH) valMeninos = inputH.value;
-      }
-
-      const meninas = parseInt(String(valMeninas || '0').trim() || '0', 10);
-      const meninos = parseInt(String(valMeninos || '0').trim() || '0', 10);
-
-      const isSuspenso = rawData[`suspenso_${index}`] === 'on';
-      let justificativa = '-';
-      if (isSuspenso) {
-        const pre = rawData[`justificativa_pre_${index}`];
-        justificativa = pre === 'Outros' ? (rawData[`justificativa_custom_${index}`] || 'Outro') : pre;
-      }
-
-      const entry = {
+      entries.push({
         data_reuniao: formatToISO(dateLabel),
-        meninas,
-        meninos,
-        suspenso: isSuspenso ? 'Sim' : 'Não',
-        justificativa,
-        colaboradoras: 0,
+        meninas: isSus ? 0 : parseInt(rawData[`meninas_${i}`] || '0', 10),
+        meninos: isSus ? 0 : parseInt(rawData[`meninos_${i}`] || '0', 10),
+        colaboradores: 0,
+        suspenso: isSus ? 'Sim' : 'Não',
+        justificativa: just,
+        instrutora: window.auxiliarFullName || user.email,
+        localidade: config.comum,
+        cidade: config.municipio,
+        // Campos obrigatórios conforme restrições NOT NULL da tabela ebi_atividades
         livro: '-',
         capitulo: '-',
         versiculo: '-',
-        titulo_historia: '-',
-        instrutora: window.auxiliarFullName || user.user_metadata?.full_name || user.email.split('@')[0],
-        localidade: config.comum,
-        cidade: config.municipio
-      };
-
-      console.log(`[Cadastro EBI] Coletando Payload Reunião das Crianças ${index + 1}:`, entry);
-      entries.push(entry);
+        titulo_historia: '-'
+      });
     }
 
-    Swal.fire({
-      title: 'Enviando...',
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
+    Swal.fire({ title: 'Enviando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
       for (const entry of entries) {
-        const response = await fetch('/api/recitativos', {
+        const res = await fetch('/api/atividades', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entry)
         });
-
-        const responseBody = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const error = new Error(responseBody.error || 'Falha no envio de uma das datas.');
-          error.status = response.status;
-          error.payload = responseBody;
-          throw error;
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Erro no envio.');
         }
       }
-
       Swal.fire({
         title: 'Sucesso!',
-        text: 'Lançamento realizado com sucesso.',
+        text: 'Presença registrada.',
         icon: 'success',
         timer: 4000,
         timerProgressBar: true,
-        showConfirmButton: true,
-        confirmButtonText: 'OK',
         confirmButtonColor: '#1e4b7a'
-      }).then(() => {
-        window.location.href = '/';
-      });
+      }).then(() => window.location.href = '/');
     } catch (err) {
-      if (err.status === 409) {
-        Swal.fire({
-          title: 'Lançamento já realizado',
-          text: err.payload?.error || 'Esta Comum já realizou um lançamento nesta data. Procure a coordenação.',
-          icon: 'warning',
-          confirmButtonColor: '#1e4b7a',
-          timer: 3500,
-          timerProgressBar: true,
-          showConfirmButton: true,
-          confirmButtonText: 'OK'
-        });
-        return;
-      }
-
-      Swal.fire('Erro', err.message || 'Não foi possível concluir o lançamento.', 'error');
+      Swal.fire({
+        title: 'Erro',
+        text: err.message,
+        icon: 'error',
+        confirmButtonColor: '#1e4b7a',
+        timer: 4000,
+        timerProgressBar: true
+      });
     } finally {
       isSubmitting = false;
       setSubmittingState(false);

@@ -1,4 +1,4 @@
--- Script SQL para criar a tabela rjm_recitativos
+-- Script SQL TOTAL para criar a tabela rjm_recitativos (Versão EBI Completa)
 -- Execute este script no SQL Editor do seu projeto Supabase
 
 CREATE TABLE IF NOT EXISTS public.rjm_recitativos (
@@ -7,10 +7,17 @@ CREATE TABLE IF NOT EXISTS public.rjm_recitativos (
     data_reuniao TEXT NOT NULL,
     meninas INTEGER DEFAULT 0,
     meninos INTEGER DEFAULT 0,
-    mocas INTEGER DEFAULT 0,
-    mocos INTEGER DEFAULT 0,
-    total_recitativos INTEGER DEFAULT 0,
-    total_comparecimento INTEGER DEFAULT 0,
+    colaboradoras INTEGER DEFAULT 0,
+    suspenso TEXT DEFAULT 'Não',
+    justificativa TEXT DEFAULT '-',
+    livro TEXT DEFAULT '-',
+    capitulo TEXT DEFAULT '-',
+    versiculo TEXT DEFAULT '-',
+    titulo_historia TEXT DEFAULT '-',
+    instrutora TEXT,
+    localidade TEXT,
+    cidade TEXT,
+    -- Campos legados para compatibilidade
     municipio TEXT,
     comum TEXT,
     auxiliar_id TEXT,
@@ -18,7 +25,6 @@ CREATE TABLE IF NOT EXISTS public.rjm_recitativos (
     auxiliar_nome TEXT
 );
 
--- Comentário opcional: Políticas de Segurança (RLS)
--- Como o backend usa a SERVICE_ROLE_KEY, ele ignora RLS.
--- Se desejar que os auxiliares vejam apenas seus próprios dados no futuro:
--- ALTER TABLE public.rjm_recitativos ENABLE ROW LEVEL SECURITY;
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_recitativos_data ON public.rjm_recitativos(data_reuniao);
+CREATE INDEX IF NOT EXISTS idx_recitativos_localidade ON public.rjm_recitativos(localidade);

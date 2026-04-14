@@ -1,11 +1,19 @@
--- SQL script to update rjm_recitativos table
+-- SQL script to update rjm_recitativos table with all EBI fields
 -- Execute this in the Supabase SQL Editor
 
 ALTER TABLE public.rjm_recitativos 
-ADD COLUMN IF NOT EXISTS total_recitativos INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS total_comparecimento INTEGER DEFAULT 0;
+ADD COLUMN IF NOT EXISTS colaboradoras INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS suspenso TEXT DEFAULT 'Não',
+ADD COLUMN IF NOT EXISTS justificativa TEXT DEFAULT '-',
+ADD COLUMN IF NOT EXISTS livro TEXT DEFAULT '-',
+ADD COLUMN IF NOT EXISTS capitulo TEXT DEFAULT '-',
+ADD COLUMN IF NOT EXISTS versiculo TEXT DEFAULT '-',
+ADD COLUMN IF NOT EXISTS titulo_historia TEXT DEFAULT '-',
+ADD COLUMN IF NOT EXISTS instrutora TEXT,
+ADD COLUMN IF NOT EXISTS localidade TEXT,
+ADD COLUMN IF NOT EXISTS cidade TEXT;
 
--- Comment out the following if you don't want to update existing records
--- UPDATE public.rjm_recitativos 
--- SET total_recitativos = COALESCE(meninas, 0) + COALESCE(meninos, 0) + COALESCE(mocas, 0) + COALESCE(mocos, 0)
--- WHERE total_recitativos = 0;
+-- Verificar e adicionar colunas legadas se não existirem
+ALTER TABLE public.rjm_recitativos 
+ADD COLUMN IF NOT EXISTS municipio TEXT,
+ADD COLUMN IF NOT EXISTS comum TEXT;

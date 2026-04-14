@@ -8,9 +8,9 @@
   <meta http-equiv="Expires" content="0" />
   <title>Principal - Presença EBI - Regional Itapevi</title>
   <link rel="icon" type="image/png" href="/assets/favicon.png" />
-  <link rel="stylesheet" href="/styles/main.css?v=1.0.1" />
+  <link rel="stylesheet" href="/styles/main.css?v=1.0.3" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/scripts/auth.js?v=1.0.1"></script>
+  <script src="/scripts/auth.js?v=1.0.3"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body style="background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -25,50 +25,51 @@
     </div>
   </div>
 
-  <main class="auth-wrap" style="padding: 0; display: flex; align-items: center; justify-content: center; width: 100%;">
+  <main class="auth-wrap">
+    <div style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 30px; width: 100%;">
+      <div class="sac-card" style="position: relative; margin: 0 auto;">
+        <header class="sac-header">
+          <img src="/assets/logo-ccb.png" alt="CCB" class="sac-logo" />
+          <h1 class="sac-title">EBI - Espaço Bíblico Infantil</h1>
+          <h2 class="sac-title" style="font-size: 1.2rem; margin-top: 5px; opacity: 0.9;">Presença Regional Itapevi</h2>
+        </header>
 
-    <div class="sac-card" style="position: relative;">
-      <header class="sac-header">
-        <img src="/assets/logo-ccb.png" alt="CCB" class="sac-logo" />
-        <h1 class="sac-title">EBI - Espaço Bíblico Infantil</h1>
-        <p class="sac-subtitle">Controle de Presença - Regional Itapevi</p>
-      </header>
-
-      <div class="sac-body">
-        <form id="selectionForm" class="sac-form">
-          <!-- Mês -->
-          <div class="form-group">
-            <div class="input-icon-box">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y1="10"></line></svg>
+        <div class="sac-body">
+          <form id="selectionForm" class="sac-form">
+            <!-- Mês -->
+            <div class="form-group">
+              <div class="input-icon-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y1="10"></line></svg>
+              </div>
+              <select id="mes" name="mes" required></select>
             </div>
-            <select id="mes" name="mes" required></select>
-          </div>
 
-          <input type="hidden" id="municipio" name="municipio" required />
-          <input type="hidden" id="comum" name="comum" required />
+            <input type="hidden" id="municipio" name="municipio" required />
+            <input type="hidden" id="comum" name="comum" required />
 
-          <!-- Comum -->
-          <div class="form-group">
-            <div class="input-icon-box">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <!-- Comum -->
+            <div class="form-group">
+              <div class="input-icon-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              </div>
+              <div class="sac-search-container">
+                <input type="text" id="comumSearch" placeholder="Pesquise sua Comum..." autocomplete="off" />
+                <div id="comumResults" class="sac-search-results"></div>
+              </div>
             </div>
-            <div class="sac-search-container">
-              <input type="text" id="comumSearch" placeholder="Pesquise sua Comum..." autocomplete="off" />
-              <div id="comumResults" class="sac-search-results"></div>
-            </div>
-          </div>
 
-          <div style="margin-top: 30px;">
-            <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecione o tipo de lançamento para continuar:</p>
-            <div class="grid-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-              <button type="button" class="sac-btn" onclick="handleNavigation('all')">LANÇAMENTO MENSAL</button>
-              <button type="button" class="sac-btn btn-secondary" onclick="handleNavigation('single')">DATA ÚNICA (AVULSA)</button>
+            <div style="margin-top: 30px;">
+              <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecione o tipo de lançamento para continuar:</p>
+              <div class="grid-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button type="button" class="sac-btn" onclick="handleNavigation('all')">LANÇAMENTO MENSAL</button>
+                <button type="button" class="sac-btn btn-secondary" onclick="handleNavigation('single')">DATA ÚNICA (AVULSA)</button>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
-      <footer class="sac-page-footer" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+      <footer class="sac-page-footer">
         <span class="footer-brand">&copy; Aplicativo Espaço Bíblico Infantil v1.0</span>
         <a href="#" class="footer-ccb">Congregação Cristã no Brasil</a>
         <span class="footer-region">Regional Itapevi</span>
