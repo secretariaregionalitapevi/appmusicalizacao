@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Principal - Presença EBI - Regional Itapevi</title>
+  <title>Principal - PresenÃ§a EBI - Regional Itapevi</title>
   <link rel="icon" type="image/png" href="/assets/favicon.png" />
   <link rel="stylesheet" href="/styles/main.css?v=1.0.1" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -30,13 +30,13 @@
     <div class="sac-card" style="position: relative;">
       <header class="sac-header">
         <img src="/assets/logo-ccb.png" alt="CCB" class="sac-logo" />
-        <h1 class="sac-title">EBI - Espaço Bíblico Infantil</h1>
-        <p class="sac-subtitle">Controle de Presença - Regional Itapevi</p>
+        <h1 class="sac-title">EBI - EspaÃ§o BÃ­blico Infantil</h1>
+        <p class="sac-subtitle">Controle de PresenÃ§a - Regional Itapevi</p>
       </header>
 
       <div class="sac-body">
         <form id="selectionForm" class="sac-form">
-          <!-- Mês -->
+          <!-- MÃªs -->
           <div class="form-group">
             <div class="input-icon-box">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y1="10"></line></svg>
@@ -59,10 +59,10 @@
           </div>
 
           <div style="margin-top: 30px;">
-            <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecione o tipo de lançamento para continuar:</p>
+            <p style="margin-bottom: 20px; color: #64748b; font-size: 14px;">Selecione o tipo de lanÃ§amento para continuar:</p>
             <div class="grid-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-              <button type="button" class="sac-btn" data-type="all" style="margin-top: 0; font-size: 14px;">LANÇAMENTO MENSAL</button>
-              <button type="button" class="sac-btn" data-type="one" style="margin-top: 0; background: #64748b; font-size: 14px;">DATA ÚNICA (AVULSA)</button>
+              <button type="button" class="sac-btn" data-type="all" style="margin-top: 0; font-size: 14px;">LANÃ‡AMENTO MENSAL</button>
+              <button type="button" class="sac-btn" data-type="one" style="margin-top: 0; background: #64748b; font-size: 14px;">DATA ÃšNICA (AVULSA)</button>
             </div>
           </div>
         </form>
@@ -81,7 +81,7 @@
     window.addEventListener('load', async () => {
       window.currentUser = await window.checkAuth();
       
-      // Popular Comuns (Casas de Oração)
+      // Popular Comuns (Casas de OraÃ§Ã£o)
       const comumInput = document.getElementById('comum');
       const comumSearch = document.getElementById('comumSearch');
       const comumResults = document.getElementById('comumResults');
@@ -142,7 +142,7 @@
           }
         });
 
-        // Se o usuário tem uma comum no perfil, pré-selecionar e TRAVAR
+        // Se o usuÃ¡rio tem uma comum no perfil, prÃ©-selecionar e TRAVAR
         try {
           const userEmail = window.currentUser.email || '';
           console.log(`Buscando perfil para ID: ${window.currentUser.id} e Email: ${userEmail}`);
@@ -151,7 +151,7 @@
           let profile = await profileRes.json();
           console.log('Dados do perfil recebidos:', profile);
 
-          // Fallback para metadata do usuário se o perfil no banco estiver vazio
+          // Fallback para metadata do usuÃ¡rio se o perfil no banco estiver vazio
           if ((!profile || !profile.comum) && window.currentUser.user_metadata) {
             const meta = window.currentUser.user_metadata;
             console.log('Dados de Metadata encontrados:', meta); // Debug completo
@@ -190,11 +190,11 @@
             const group = comumSearch.closest('.form-group');
             group.classList.add('is-locked');
             
-            // Trocar ícone para Cadeado
+            // Trocar Ã­cone para Cadeado
             const iconBox = group.querySelector('.input-icon-box');
             iconBox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
             
-            comumSearch.placeholder = "Sua Comum está fixada";
+            comumSearch.placeholder = "Sua Comum estÃ¡ fixada";
             console.log('Trava de Comum aplicada com sucesso:', { userComum, userCity });
           }
         } catch (profileErr) {
@@ -206,7 +206,7 @@
 
       // Popular meses
       const mesSelect = document.getElementById('mes');
-      const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       const now = new Date();
       meses.forEach((m, i) => {
         const opt = document.createElement('option');
@@ -216,25 +216,25 @@
         mesSelect.appendChild(opt);
       });
 
-      // Função de processamento e navegação
+      // FunÃ§Ã£o de processamento e navegaÃ§Ã£o
       const handleNavigation = (type) => {
         const mes = document.getElementById('mes').value;
         const comum = document.getElementById('comum').value;
         let municipio = document.getElementById('municipio').value;
 
-        // Se o município estiver vazio mas a comum preenchida, tenta colocar Itapevi por padrão
+        // Se o municÃ­pio estiver vazio mas a comum preenchida, tenta colocar Itapevi por padrÃ£o
         if (comum && !municipio) {
           municipio = 'Itapevi';
           document.getElementById('municipio').value = 'Itapevi';
         }
 
-        console.log('Validando navegação:', { mes, municipio, comum });
+        console.log('Validando navegaÃ§Ã£o:', { mes, municipio, comum });
 
         if (!mes || !municipio || !comum) {
-          // Tenta recuperar do search se estiver preenchido mas não "clicado"
+          // Tenta recuperar do search se estiver preenchido mas nÃ£o "clicado"
           const searchVal = document.getElementById('comumSearch').value;
           if (searchVal && (!comum || !municipio)) {
-            // Se o usuário digitou mas não clicou, tentamos pegar o primeiro resultado
+            // Se o usuÃ¡rio digitou mas nÃ£o clicou, tentamos pegar o primeiro resultado
             const firstResult = document.querySelector('.sac-search-item');
             if (firstResult) {
               document.getElementById('comum').value = firstResult.dataset.value;
@@ -245,7 +245,7 @@
 
           Swal.fire({
             title: 'Campos Incompletos',
-            text: 'Por favor, selecione o Mês, Município e Casa de Oração antes de prosseguir.',
+            text: 'Por favor, selecione o MÃªs, MunicÃ­pio e Casa de OraÃ§Ã£o antes de prosseguir.',
             icon: 'warning',
             confirmButtonColor: '#003049'
           });
@@ -253,7 +253,7 @@
         }
 
         // Calcular domingos
-        const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const mesesNomes = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const mesIndex = mesesNomes.indexOf(mes);
         const year = new Date().getFullYear();
         const sundays = [];
@@ -277,7 +277,7 @@
         window.location.href = '/cadastro';
       };
 
-      // Configurar botões de tipo
+      // Configurar botÃµes de tipo
       const typeBtns = document.querySelectorAll('.grid-btns .sac-btn');
       typeBtns.forEach(btn => {
         btn.onclick = () => {
@@ -285,7 +285,7 @@
         };
       });
 
-      // Botão Sair (Logout)
+      // BotÃ£o Sair (Logout)
       const btnSair = document.getElementById('btnLogoutTop');
       if (btnSair) {
         btnSair.onclick = async () => {

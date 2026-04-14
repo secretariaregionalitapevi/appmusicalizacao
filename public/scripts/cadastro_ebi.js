@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.updateSummaryWithName = async (user) => {
     let name = user.user_metadata?.full_name;
 
-    // Se não tiver no metadata, tenta buscar na tabela rjm_auxiliares via API.
+    // Se nÃ£o tiver no metadata, tenta buscar na tabela rjm_auxiliares via API.
     if (!name) {
       try {
         const res = await fetch(`/api/profile?id=${user.id}`);
@@ -42,8 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.auxiliarFullName = name;
 
     summary.innerHTML = `
-      <strong>Mês:</strong> ${config.mes} |
-      <strong>Município:</strong> ${config.municipio} |
+      <strong>MÃªs:</strong> ${config.mes} |
+      <strong>MunicÃ­pio:</strong> ${config.municipio} |
       <strong>Comum:</strong> ${config.comum} <br>
       <span style="color: var(--brand); font-weight: 700;">Nome: ${name}</span>
     `;
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.className = 'sunday-card';
 
     // No mensal, cada aula pode ter sua data ajustada. No avulso, a data
-    // já é escolhida no topo e apenas reaproveitada no payload.
+    // jÃ¡ Ã© escolhida no topo e apenas reaproveitada no payload.
     const dateField = initialISO
       ? `<label style="font-size: 13px; color: #64748b; margin-bottom: 5px; display: block;">Confirme a data:</label>
          <input type="date" name="date_${index}" value="${initialISO}" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px; font-family:inherit;">`
@@ -81,14 +81,78 @@ document.addEventListener('DOMContentLoaded', async () => {
           <input type="number" name="total_presentes_${index}" value="0" readonly class="count-input total-field">
         </div>
       </div>
+
+      <div class="suspension-row">
+        <label class="suspension-toggle">
+          <input type="checkbox" name="suspenso_${index}" class="suspension-checkbox">
+          <span>EBI Suspenso nesta data</span>
+        </label>
+        <div class="justification-area hidden">
+          <label style="font-size: 11px; margin-bottom: 4px;">Motivo da SuspensÃ£o:</label>
+          <select name="justificativa_pre_${index}" class="justification-select">
+            <option value="">-- Selecione o motivo --</option>
+            <option value="Reforma">Reforma</option>
+            <option value="Culto de Mocidade">Culto de Mocidade</option>
+            <option value="Evento Regional">Evento Regional</option>
+            <option value="Outros">Outros (especificar)</option>
+          </select>
+          <input type="text" name="justificativa_custom_${index}" class="form-control other-justification hidden" placeholder="Descreva brevemente..." maxLength="50">
+        </div>
+      </div>
     `;
 
     const inputs = card.querySelectorAll('.count-input:not(.total-field)');
     const totalField = card.querySelector(`input[name="total_presentes_${index}"]`);
+    const suspensionCheckbox = card.querySelector(`.suspension-checkbox`);
+    const justificationArea = card.querySelector(`.justification-area`);
+    const justificationSelect = card.querySelector(`.justification-select`);
+    const justificationCustom = card.querySelector(`.other-justification`);
+
+    suspensionCheckbox.addEventListener('change', (e) => {
+      const isSuspended = e.target.checked;
+      card.classList.toggle('suspension-active', isSuspended);
+      justificationArea.classList.toggle('hidden', !isSuspended);
+      
+      inputs.forEach(input => {
+        input.disabled = isSuspended;
+        if (isSuspended) {
+          input.value = '0';
+          input.dispatchEvent(new Event('input'));
+        }
+      });
+
+      if (isSuspended) {
+        justificationSelect.required = true;
+      } else {
+        justificationSelect.required = false;
+        justificationCustom.required = false;
+      }
+    });
+
+    justificationSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      // Estilo especial para Reforma
+      if (val === 'Reforma') {
+        justificationSelect.classList.add('reforma');
+      } else {
+        justificationSelect.classList.remove('reforma');
+      }
+
+      // Mostrar campo customizado se for "Outros"
+      if (val === 'Outros') {
+        justificationCustom.classList.remove('hidden');
+        justificationCustom.required = true;
+      } else {
+        justificationCustom.classList.add('hidden');
+        justificationCustom.required = false;
+      }
+    });
 
     inputs.forEach((input) => {
       input.addEventListener('focus', () => {
-        if (input.value === '0') input.value = '';
+        if (input.value === '0') {
+          input.value = '';
+        }
       });
 
       input.addEventListener('blur', () => {
@@ -114,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     config.sundays.forEach((dateBR, index) => {
       const [day, month, year] = dateBR.split('/');
       const iso = `${year}-${month}-${day}`;
-      container.appendChild(createCard(`Reunião das Crianças ${index + 1}`, index, iso));
+      container.appendChild(createCard(`ReuniÃ£o das CrianÃ§as ${index + 1}`, index, iso));
     });
   } else {
     datePickerRow.classList.remove('hidden');
@@ -179,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const user = window.currentUser;
     if (!user) {
-      Swal.fire('Erro', 'Você precisa estar logado para enviar.', 'error');
+      Swal.fire('Erro', 'VocÃª precisa estar logado para enviar.', 'error');
       return;
     }
 
@@ -200,7 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Fallback: se a chave não estiver no rawData, tenta pegar via match direto no form
+      // Fallback: se a chave nÃ£o estiver no rawData, tenta pegar via match direto no form
       let valMeninas = rawData[`meninas_${index}`];
       let valMeninos = rawData[`meninos_${index}`];
 
@@ -216,10 +280,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const meninas = parseInt(String(valMeninas || '0').trim() || '0', 10);
       const meninos = parseInt(String(valMeninos || '0').trim() || '0', 10);
 
+      const isSuspenso = rawData[`suspenso_${index}`] === 'on';
+      let justificativa = '-';
+      if (isSuspenso) {
+        const pre = rawData[`justificativa_pre_${index}`];
+        justificativa = pre === 'Outros' ? (rawData[`justificativa_custom_${index}`] || 'Outro') : pre;
+      }
+
       const entry = {
         data_reuniao: formatToISO(dateLabel),
         meninas,
         meninos,
+        suspenso: isSuspenso ? 'Sim' : 'NÃ£o',
+        justificativa,
         colaboradoras: 0,
         livro: '-',
         capitulo: '-',
@@ -230,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         cidade: config.municipio
       };
 
-      console.log(`[Cadastro EBI] Coletando Payload Reunião das Crianças ${index + 1}:`, entry);
+      console.log(`[Cadastro EBI] Coletando Payload ReuniÃ£o das CrianÃ§as ${index + 1}:`, entry);
       entries.push(entry);
     }
 
@@ -259,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       Swal.fire({
         title: 'Sucesso!',
-        text: 'Lançamento realizado com sucesso.',
+        text: 'LanÃ§amento realizado com sucesso.',
         icon: 'success',
         timer: 4000,
         timerProgressBar: true,
@@ -272,8 +345,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       if (err.status === 409) {
         Swal.fire({
-          title: 'Lançamento já realizado',
-          text: err.payload?.error || 'Esta Comum já realizou um lançamento nesta data. Procure a coordenação.',
+          title: 'LanÃ§amento jÃ¡ realizado',
+          text: err.payload?.error || 'Esta Comum jÃ¡ realizou um lanÃ§amento nesta data. Procure a coordenaÃ§Ã£o.',
           icon: 'warning',
           confirmButtonColor: '#1e4b7a',
           timer: 3500,
@@ -284,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      Swal.fire('Erro', err.message || 'Não foi possível concluir o lançamento.', 'error');
+      Swal.fire('Erro', err.message || 'NÃ£o foi possÃ­vel concluir o lanÃ§amento.', 'error');
     } finally {
       isSubmitting = false;
       setSubmittingState(false);

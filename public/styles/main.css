@@ -227,14 +227,14 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
   .grid-counts {
-    grid-template-columns: repeat(3, 1fr); /* Mantém 3 colunas até telas bem pequenas */
+    grid-template-columns: repeat(3, 1fr); /* MantÃ©m 3 colunas atÃ© telas bem pequenas */
     gap: 8px;
   }
 }
 
 @media (max-width: 400px) {
   .grid-counts {
-    grid-template-columns: repeat(3, 1fr); /* Força 3 colunas no iPhone 8/SE */
+    grid-template-columns: repeat(3, 1fr); /* ForÃ§a 3 colunas no iPhone 8/SE */
     gap: 6px;
   }
   .grid-counts label {
@@ -247,6 +247,58 @@ textarea:focus {
 }
 
 .hidden { display: none !important; }
+
+/* Suspension Styles */
+.suspension-row {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suspension-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--muted);
+  user-select: none;
+  font-size: 14px;
+}
+
+.suspension-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.suspension-active .suspension-toggle {
+  color: var(--err);
+}
+
+.justification-select {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  font-size: 14px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+}
+
+.justification-select.reforma {
+  color: var(--err);
+  font-weight: 700;
+  border-color: var(--err);
+}
+
+.other-justification {
+  margin-top: 8px;
+}
+
 
 .top-nav {
   position: absolute;
@@ -288,7 +340,7 @@ textarea:focus {
   font-weight: 700;
   text-decoration: none;
   transition: all 0.2s;
-  height: 38px; /* Altura fixa para ambos os botões */
+  height: 38px; /* Altura fixa para ambos os botÃµes */
   white-space: nowrap; /* Impede quebra de linha no texto */
 }
 
@@ -581,7 +633,7 @@ textarea:focus {
   background: #f8fafc;
 }
 
-/* Seletor Pesquisável */
+/* Seletor PesquisÃ¡vel */
 .sac-search-container {
   position: relative;
   flex: 1;
