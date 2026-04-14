@@ -605,8 +605,89 @@ async function handleRequest(req, res) {
   console.log(`[Server] ${req.method} ${pathname}`);
 
   try {
-    // --- ROTA DE PERFIL (GET/POST) - Prioridade Máxima ---
-    if (pathname === "/api/profile") {
+    const p = pathname.toLowerCase().replace(/\/$/, "") || "/";
+
+    // --- ROTA DE LANÇAMENTO (POST) - Prioridade Máxima para Produção ---
+    if (req.method === "POST" && p === "/api/atividades") {
+      const payload = await readJsonBody(req);
+      console.log("[DEBUG] Recebendo Payload no Servidor:", JSON.stringify(payload, null, 2));
+      const missing = ["data_reuniao", "localidade"].filter((field) => {
+        const value = payload[field];
+        return value === undefined || value === null || String(value).trim() === "";
+      });
+
+      if (missing.length > 0) {
+        return sendJson(res, 400, { error: "Campos obrigatórios ausentes.", missing });
+      }
+
+      const existingRecitativos = await readSavedRecitativosByDate(payload.data_reuniao);
+      const duplicateCheck = detectRecitativoDuplicate(payload, existingRecitativos);
+      if (duplicateCheck.duplicate) {
+        return sendJson(res, 409, {
+          error: "Esta Comum já realizou um lançamento nesta data. Procure a coordenação.",
+          duplicateOf: duplicateCheck.matchedId,
+          duplicateReason: duplicateCheck.reason,
+          duplicate: buildRecitativoDuplicateDetails(duplicateCheck.matchedEntry)
+        });
+      }
+
+      // Salvar localmente
+      const saved = await saveSubmission("recitativo", payload);
+
+      // Salvar no Supabase
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "rjm_recitativos";
+
+      if (supabaseUrl && supabaseKey) {
+        const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${supabaseTable}`);
+        try {
+          const resSupabase = await fetch(url, {
+            method: "POST",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=minimal"
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          if (!resSupabase.ok) {
+            const errorText = await resSupabase.text();
+            console.error("Erro no Supabase:", errorText);
+            return sendJson(res, 500, { error: "Erro ao salvar no banco de dados Supabase.", details: errorText });
+          }
+        } catch (err) {
+          console.error("Falha ao conectar com Supabase:", err);
+          return sendJson(res, 500, { error: "Falha de conexão com Supabase." });
+        }
+      }
+
+      // Webhook opcional
+      const webhookUrl = process.env.WEBHOOK_RECITATIVOS;
+      if (webhookUrl) {
+        try {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              ...payload, 
+              spreadsheet_id: process.env.GOOGLE_SHEET_ID_RECITATIVOS,
+              id: saved.id, 
+              created_at: saved.createdAt 
+            })
+          });
+        } catch (err) {
+          console.error("Erro no Webhook:", err);
+        }
+      }
+
+      return sendJson(res, 201, { message: "Lançamento realizado com sucesso.", id: saved.id });
+    }
+
+    // --- ROTA DE PERFIL (GET/POST) ---
+    if (p === "/api/profile") {
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -743,86 +824,6 @@ async function handleRequest(req, res) {
       return;
     }
 
-    if (req.method === "POST" && pathname === "/api/atividades") {
-      const payload = await readJsonBody(req);
-      console.log("[DEBUG] Recebendo Payload no Servidor:", JSON.stringify(payload, null, 2));
-      const missing = ["data_reuniao", "localidade"].filter((field) => {
-        const value = payload[field];
-        return value === undefined || value === null || String(value).trim() === "";
-      });
-
-      if (missing.length > 0) {
-        sendJson(res, 400, { error: "Campos obrigatórios ausentes.", missing });
-        return;
-      }
-
-      const existingRecitativos = await readSavedRecitativosByDate(payload.data_reuniao);
-      const duplicateCheck = detectRecitativoDuplicate(payload, existingRecitativos);
-      if (duplicateCheck.duplicate) {
-        sendJson(res, 409, {
-          error: "Esta Comum já realizou um lançamento nesta data. Procure a coordenação.",
-          duplicateOf: duplicateCheck.matchedId,
-          duplicateReason: duplicateCheck.reason,
-          duplicate: buildRecitativoDuplicateDetails(duplicateCheck.matchedEntry)
-        });
-        return;
-      }
-
-      // Salvar localmente (se habilitado no .env)
-      const saved = await saveSubmission("recitativo", payload);
-
-      // Salvar no Supabase
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "rjm_recitativos";
-
-      if (supabaseUrl && supabaseKey) {
-        const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${supabaseTable}`);
-        try {
-          const resSupabase = await fetch(url, {
-            method: "POST",
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json",
-              "Prefer": "return=minimal"
-            },
-            body: JSON.stringify(payload)
-          });
-          
-          if (!resSupabase.ok) {
-            const errorText = await resSupabase.text();
-            console.error("Erro no Supabase:", errorText);
-            return sendJson(res, 500, { error: "Erro ao salvar no banco de dados Supabase.", details: errorText });
-          }
-        } catch (err) {
-          console.error("Falha ao conectar com Supabase:", err);
-          return sendJson(res, 500, { error: "Falha de conexão com Supabase." });
-        }
-      }
-
-      // Encaminhar para Webhook (Google Sheets via Apps Script)
-      const webhookUrl = process.env.WEBHOOK_RECITATIVOS;
-      if (webhookUrl) {
-        try {
-          await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              ...payload, 
-              spreadsheet_id: process.env.GOOGLE_SHEET_ID_RECITATIVOS,
-              id: saved.id, 
-              created_at: saved.createdAt 
-            })
-          });
-        } catch (err) {
-          console.error("Erro no Webhook Recitativos:", err);
-        }
-      }
-
-      sendJson(res, 201, { message: "Lançamento realizado com sucesso.", id: saved.id });
-      return;
-    }
 
     if (req.method === "POST" && (pathname === "/api/cadastros/crianca" || pathname === "/api/cadastros/monitor")) {
       const tipo = pathname.endsWith("crianca") ? "crianca" : "monitor";
