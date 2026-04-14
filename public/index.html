@@ -206,7 +206,7 @@
 
       // Popular meses
       const mesSelect = document.getElementById('mes');
-      const meses = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       const now = new Date();
       meses.forEach((m, i) => {
         const opt = document.createElement('option');
@@ -216,13 +216,13 @@
         mesSelect.appendChild(opt);
       });
 
-      // FunÃ§Ã£o de processamento e navegaÃ§Ã£o
+      // Função de processamento e navegação
       const handleNavigation = (type) => {
         const mes = document.getElementById('mes').value;
         const comum = document.getElementById('comum').value;
         let municipio = document.getElementById('municipio').value;
 
-        // Se o municÃ­pio estiver vazio mas a comum preenchida, tenta colocar Itapevi por padrÃ£o
+        // Se o município estiver vazio mas a comum preenchida, tenta colocar Itapevi por padrão
         if (comum && !municipio) {
           municipio = 'Itapevi';
           document.getElementById('municipio').value = 'Itapevi';
