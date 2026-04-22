@@ -687,45 +687,61 @@ async function handleRequest(req, res) {
     }
 
     // --- ROTA DE PERFIL (GET/POST) ---
-    if (p === "/api/profile") {
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (p === "/api/profile") {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-      if (req.method === "GET") {
-        const userId = url.searchParams.get("id");
-        if (!userId) return sendJson(res, 400, { error: "ID do usuário ausente." });
-
-        // Query baseada na sonda: a tabela pode ser 'profiles' ou 'rjm_auxiliares'
-        const table = process.env.SUPABASE_TABLE_AUXILIARES || 'profiles';
-        const urlProfile = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?id=eq.${userId}&select=*`);
-        try {
-          const response = await fetch(urlProfile, {
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`
-            }
-          });
-          const data = await response.json();
-          // Retornar o primeiro registro encontrado
-          if (data && data.length > 0) {
-            return sendJson(res, 200, data[0]);
-          }
+        if (req.method === "GET") {
+          const userId = url.searchParams.get("id");
+          if (!userId) return sendJson(res, 400, { error: "ID do usuário ausente." });
           
-          // Fallback para user_id se for a tabela profiles legada
-          const urlLegacy = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?user_id=eq.${userId}&select=*`);
-          const resLegacy = await fetch(urlLegacy, {
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`
+          const tables = ['profiles'];
+          let profile = null;
+
+          for (const table of tables) {
+            try {
+              // 1. Tenta buscar por 'id'
+              const urlId = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?id=eq.${userId}&select=*`);
+              const resId = await fetch(urlId, {
+                headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+              });
+              const dataId = await resId.json();
+              if (dataId && dataId.length > 0) {
+                profile = dataId[0];
+                break;
+              }
+
+              // 2. Tenta buscar por 'user_id'
+              const urlUserId = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?user_id=eq.${userId}&select=*`);
+              const resUserId = await fetch(urlUserId, {
+                headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+              });
+              const dataUserId = await resUserId.json();
+              if (dataUserId && dataUserId.length > 0) {
+                profile = dataUserId[0];
+                break;
+              }
+
+              // 3. Tenta buscar por 'email' (fallback final)
+              const userEmail = url.searchParams.get("email");
+              if (userEmail) {
+                const urlEmail = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?email=eq.${userEmail}&select=*`);
+                const resEmail = await fetch(urlEmail, {
+                  headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+                });
+                const dataEmail = await resEmail.json();
+                if (dataEmail && dataEmail.length > 0) {
+                  profile = dataEmail[0];
+                  break;
+                }
+              }
+            } catch (err) {
+              console.warn(`Erro ao buscar perfil na tabela ${table}:`, err.message);
             }
-          });
-          const dataLegacy = await resLegacy.json();
-          return sendJson(res, 200, dataLegacy[0] || {});
-        } catch (err) {
-          console.error('Erro ao buscar perfil:', err);
-          return sendJson(res, 500, { error: "Erro ao buscar perfil." });
+          }
+
+          return sendJson(res, 200, profile || {});
         }
-      }
 
       if (req.method === "POST") {
         let body = "";

@@ -1,6 +1,6 @@
 # App Cadastro MI
 
-Aplicação web em Node.js para cadastro de **Criança** e **Monitor** da Musicalização Infantil.
+Aplicação web em Node.js para cadastro de **Criança** e **Colaborador** da EBI.
 
 ## Funcionalidades
 - Tela inicial com seleção de tipo de cadastro.
@@ -63,13 +63,13 @@ Se os webhooks não forem informados, os cadastros continuam sendo salvos localm
 
 ## Publicação no GitHub
 Repositório alvo:
-`git@github.com:secretariaregionalitapevi/appcadastromi.git`
+`git@github.com:secretariaregionalitapevi/ebi.git`
 
 Comandos (quando o repositório local estiver no escopo correto):
 ```bash
 git add .
 git commit -m "feat: estrutura completa do app cadastro MI com seleção de comuns por modal"
 git branch -M main
-git remote add origin git@github.com:secretariaregionalitapevi/appcadastromi.git
+git remote add origin git@github.com:secretariaregionalitapevi/ebi.git
 git push -u origin main
 ```

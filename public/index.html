@@ -60,13 +60,13 @@
 
             <div style="margin-top: 30px;">
               <p style="margin-bottom: 20px; color: #64748b; font-size: 14px; text-align: center;">Selecione o tipo de lançamento:</p>
-              <div class="grid-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <button type="button" class="sac-btn" onclick="handleNavigation('all')" style="display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; font-size: 13px; padding: 12px 5px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y1="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
+              <div class="grid-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 0;">
+                <button type="button" class="sac-btn" onclick="handleNavigation('all')" style="margin-top: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
                   MENSAL
                 </button>
-                <button type="button" class="sac-btn btn-secondary" onclick="handleNavigation('single')" style="display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; font-size: 13px; padding: 12px 5px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <button type="button" class="sac-btn btn-secondary" onclick="handleNavigation('single')" style="margin-top: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="m9 16 2 2 4-4"></path></svg>
                   DATA ÚNICA
                 </button>
               </div>
@@ -151,61 +151,67 @@
 
         // Se o usuário tem uma comum no perfil, pré-selecionar e TRAVAR
         try {
-          const userEmail = window.currentUser.email || '';
-          console.log(`Buscando perfil para ID: ${window.currentUser.id} e Email: ${userEmail}`);
-          
-          const profileRes = await fetch(`/api/profile?id=${window.currentUser.id}&email=${encodeURIComponent(userEmail)}`);
-          let profile = await profileRes.json();
-          console.log('Dados do perfil recebidos:', profile);
+          const userId = window.currentUser?.id;
+          const userEmail = window.currentUser?.email || '';
 
-          // Fallback para metadata do usuário se o perfil no banco estiver vazio
-          if ((!profile || !profile.comum) && window.currentUser.user_metadata) {
-            const meta = window.currentUser.user_metadata;
-            console.log('Dados de Metadata encontrados:', meta); // Debug completo
+          if (userId) {
+            console.log(`[Trava] Iniciando verificação para ID: ${userId}`);
             
-            // Tentar descobrir a comum em nomes de campos variados
-            const userComum = meta.comum || meta.comum_congregacao || meta.congregacao || meta.polo || meta.polo_participacao || '';
-            const userCity = meta.cidade || meta.municipio || (findComum(userComum) || {}).cidade || meta.polo || 'Itapevi';
-            
-            if (userComum) {
-              console.log('Comum descoberta via metadata:', userComum);
-              profile = {
-                comum: userComum,
-                cidade: userCity,
-                full_name: meta.full_name || meta.nome || ''
-              };
+            const profileRes = await fetch(`/api/profile?id=${userId}&email=${encodeURIComponent(userEmail)}`);
+            let profileData = await profileRes.json();
+            console.log('[Trava] Dados brutos do perfil:', profileData);
+
+            // Mapear campos variados para um padrão interno (comum, congregacao, localidade, polo)
+            const profile = {
+              comum: profileData.comum || profileData.congregacao || profileData.localidade || profileData.comum_congregacao || profileData.polo || '',
+              cidade: profileData.cidade || profileData.municipio || profileData.city || profileData.localidade || ''
+            };
+
+            // Fallback para metadata se o perfil no banco estiver vazio ou incompleto
+            if (!profile.comum && window.currentUser.user_metadata) {
+              const meta = window.currentUser.user_metadata;
+              console.log('[Trava] Analisando Metadata:', meta);
               
-              // Auto-reparo silencioso: Sincronizar com o banco
-              fetch('/api/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: window.currentUser.id, email: userEmail, ...profile })
-              }).catch(() => {});
+              const discoveredComum = meta.comum || meta.comum_congregacao || meta.congregacao || meta.polo || meta.polo_participacao || '';
+              if (discoveredComum) {
+                profile.comum = discoveredComum;
+                profile.cidade = meta.cidade || meta.municipio || (findComum(discoveredComum) || {}).cidade || 'Itapevi';
+                console.log('[Trava] Comum recuperada via Metadata:', discoveredComum);
+              }
+            }
+
+            if (profile && profile.comum) {
+              const userComum = profile.comum;
+              const mapped = findComum(userComum);
+              const userCity = (mapped || {}).cidade || profile.cidade || 'Itapevi';
+              
+              console.log('[Trava] APLICANDO TRAVA:', { userComum, userCity });
+
+              comumInput.value = userComum;
+              comumSearch.value = userComum;
+              comumSearch.disabled = true;
+              document.getElementById('municipio').value = userCity;
+              
+              const group = comumSearch.closest('.form-group');
+              if (group) {
+                group.classList.add('is-locked');
+                const iconBox = group.querySelector('.input-icon-box');
+                if (iconBox) {
+                  iconBox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+                }
+              }
+              
+              comumSearch.placeholder = "Sua Comum está fixada";
+              if (comumResults) comumResults.classList.remove('active');
+
+              const subtitle = document.querySelector('.card-header p');
+              if (subtitle) {
+                subtitle.innerHTML = `Presença Regional Itapevi - <strong>${userComum}</strong>`;
+              }
             }
           }
-
-          if (profile && profile.comum) {
-            const userComum = profile.comum;
-            const userCity = profile.cidade || (findComum(userComum) || {}).cidade || 'Itapevi';
-            
-            comumInput.value = userComum;
-            comumSearch.value = userComum;
-            comumSearch.readOnly = true;
-            document.getElementById('municipio').value = userCity;
-            
-            // Visual de campo travado
-            const group = comumSearch.closest('.form-group');
-            group.classList.add('is-locked');
-            
-            // Trocar ícone para Cadeado
-            const iconBox = group.querySelector('.input-icon-box');
-            iconBox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
-            
-            comumSearch.placeholder = "Sua Comum está fixada";
-            console.log('Trava de Comum aplicada com sucesso:', { userComum, userCity });
-          }
         } catch (profileErr) {
-          console.error('Erro ao buscar perfil detalhado:', profileErr);
+          console.error('Erro ao processar trava de perfil:', profileErr);
         }
       } catch (err) {
         console.error('Erro ao carregar comuns:', err);
