@@ -41,6 +41,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const SUPABASE_TABLE_RECITATIVOS = process.env.SUPABASE_TABLE_RECITATIVOS || "recitativos";
 const WEBHOOK_RECITATIVOS = process.env.WEBHOOK_RECITATIVOS || "";
+const SUPABASE_TABLE_POLOS = process.env.SUPABASE_TABLE_POLOS || "musicalizacao_polos";
 const REQUIRE_SUPABASE_DUPLICATE_CHECK = (process.env.REQUIRE_SUPABASE_DUPLICATE_CHECK || "true").toLowerCase() !== "false";
 const ENABLE_LOCAL_PERSISTENCE = (process.env.ENABLE_LOCAL_PERSISTENCE || "false").toLowerCase() === "true";
 const REQUIRE_LOCAL_DUPLICATE_CHECK = (process.env.REQUIRE_LOCAL_DUPLICATE_CHECK || "false").toLowerCase() === "true";
@@ -249,7 +250,7 @@ function formatDateBR(value) {
 }
 
 function getRecitativoComum(payload = {}) {
-  return String(payload.localidade || payload.comum || payload.comum_congregacao || "").trim();
+  return String(payload.polo || payload.localidade || payload.comum || payload.comum_congregacao || "").trim();
 }
 
 function getRecitativoMunicipio(payload = {}) {
@@ -260,9 +261,9 @@ function buildRecitativoDuplicateDetails(entry) {
   const existing = entry?.payload || {};
 
   return {
-    comum: getRecitativoComum(existing) || "Comum não informada",
+    comum: getRecitativoComum(existing) || "Polo não informado",
     municipio: getRecitativoMunicipio(existing) || "Município não informado",
-    dataReuniao: formatDateBR(existing.data_reuniao),
+    dataReuniao: formatDateBR(existing.data_aula || existing.data_reuniao),
     createdAt: entry?.createdAt || existing.created_at || existing.createdAt || ""
   };
 }
@@ -270,8 +271,8 @@ function buildRecitativoDuplicateDetails(entry) {
 async function readSavedRecitativosByDate(dateValue) {
   const normalizedDate = normalizeDate(dateValue);
   const localEntries = (await readLocalEntries()).filter((entry) => (
-    entry.tipo === "recitativo" &&
-    normalizeDate(entry.payload?.data_reuniao) === normalizedDate
+    (entry.tipo === "recitativo" || entry.tipo === "musicalizacao_aula") &&
+    normalizeDate(entry.payload?.data_aula || entry.payload?.data_reuniao) === normalizedDate
   ));
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -286,7 +287,10 @@ async function readSavedRecitativosByDate(dateValue) {
     if (!candidateDate) continue;
     const url = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}`);
     url.searchParams.set("select", "*");
-    url.searchParams.set("data_reuniao", `eq.${candidateDate}`);
+    
+    // Suportar tanto data_aula quanto data_reuniao
+    const dateField = table.includes("musicalizacao") ? "data_aula" : "data_reuniao";
+    url.searchParams.set(dateField, `eq.${candidateDate}`);
     url.searchParams.set("limit", "200");
 
     const response = await fetch(url, {
@@ -325,13 +329,13 @@ async function readSavedRecitativosByDate(dateValue) {
 
 function detectRecitativoDuplicate(payload, entries) {
   const common = normalizeText(getRecitativoComum(payload));
-  const meetingDate = normalizeDate(payload.data_reuniao);
+  const meetingDate = normalizeDate(payload.data_aula || payload.data_reuniao);
   if (!common || !meetingDate) return { duplicate: false };
 
   for (const entry of entries) {
     const existing = entry.payload || {};
     const existingCommon = normalizeText(getRecitativoComum(existing));
-    const existingMeetingDate = normalizeDate(existing.data_reuniao);
+    const existingMeetingDate = normalizeDate(existing.data_aula || existing.data_reuniao);
 
     if (common === existingCommon && meetingDate === existingMeetingDate) {
       return {
@@ -611,8 +615,24 @@ async function handleRequest(req, res) {
     if (req.method === "POST" && p === "/api/atividades") {
       const payload = await readJsonBody(req);
       console.log("[DEBUG] Recebendo Payload no Servidor:", JSON.stringify(payload, null, 2));
-      const missing = ["data_reuniao", "localidade"].filter((field) => {
-        const value = payload[field];
+      
+      // Mapeamento de campos para musicalizacao_aulas
+      const finalPayload = {
+        data_aula: payload.data_aula || payload.data_reuniao,
+        cidade: payload.cidade || payload.municipio,
+        polo: payload.polo || payload.localidade,
+        ciclo: payload.ciclo || "Ciclo 1",
+        numero_aula: parseInt(payload.numero_aula || payload.licao || 0, 10),
+        meninas_presentes: parseInt(payload.meninas_presentes || payload.meninas || 0, 10),
+        meninos_presentes: parseInt(payload.meninos_presentes || payload.meninos || 0, 10),
+        colaboradores_presentes: parseInt(payload.colaboradores_presentes || payload.colaboradores || 0, 10),
+        coordenadores_presentes: parseInt(payload.coordenadores_presentes || 0, 10),
+        instrutores_presentes: parseInt(payload.instrutores_presentes || 0, 10),
+        observacoes: payload.observacoes || payload.justificativa || ""
+      };
+
+      const missing = ["data_aula", "polo"].filter((field) => {
+        const value = finalPayload[field];
         return value === undefined || value === null || String(value).trim() === "";
       });
 
@@ -620,11 +640,14 @@ async function handleRequest(req, res) {
         return sendJson(res, 400, { error: "Campos obrigatórios ausentes.", missing });
       }
 
-      const existingRecitativos = await readSavedRecitativosByDate(payload.data_reuniao);
-      const duplicateCheck = detectRecitativoDuplicate(payload, existingRecitativos);
+      // Ajustar check de duplicidade para novos campos
+      const existingRecitativos = await readSavedRecitativosByDate(finalPayload.data_aula);
+      
+      // Detectar duplicidade baseada em polo e data
+      const duplicateCheck = detectRecitativoDuplicate(finalPayload, existingRecitativos);
       if (duplicateCheck.duplicate) {
         return sendJson(res, 409, {
-          error: "Esta Comum já realizou um lançamento nesta data. Procure a coordenação.",
+          error: "Este Polo já realizou um lançamento nesta data. Procure a coordenação.",
           duplicateOf: duplicateCheck.matchedId,
           duplicateReason: duplicateCheck.reason,
           duplicate: buildRecitativoDuplicateDetails(duplicateCheck.matchedEntry)
@@ -632,12 +655,12 @@ async function handleRequest(req, res) {
       }
 
       // Salvar localmente
-      const saved = await saveSubmission("recitativo", payload);
+      const saved = await saveSubmission("musicalizacao_aula", finalPayload);
 
       // Salvar no Supabase
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "rjm_recitativos";
+      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "musicalizacao_aulas";
 
       if (supabaseUrl && supabaseKey) {
         const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${supabaseTable}`);
@@ -650,7 +673,7 @@ async function handleRequest(req, res) {
               "Content-Type": "application/json",
               "Prefer": "return=minimal"
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(finalPayload)
           });
           
           if (!resSupabase.ok) {
@@ -672,8 +695,7 @@ async function handleRequest(req, res) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-              ...payload, 
-              spreadsheet_id: process.env.GOOGLE_SHEET_ID_RECITATIVOS,
+              ...finalPayload, 
               id: saved.id, 
               created_at: saved.createdAt 
             })
@@ -811,14 +833,15 @@ async function handleRequest(req, res) {
 
         const normalizeValue = (value) => String(value || "").trim();
         const normalizeComum = (item) => {
-          // Prioridade para nomes de colunas can\u00F4nicos 'comum' e 'cidade'
-          const comum = normalizeValue(item?.comum || item?.name || item?.nome || item?.descricao || item?.description);
-          const cidade = normalizeValue(item?.cidade || item?.city || item?.municipio || item?.localidade);
+          // Prioridade para nomes de colunas canônicos 'comum' e 'cidade'
+          const comum = normalizeValue(item?.nome_polo || item?.comum || item?.name || item?.nome || item?.descricao || item?.description);
+          const cidade = normalizeValue(item?.localidade || item?.cidade || item?.city || item?.municipio);
           if (!comum) return null;
           return { comum, cidade };
         };
 
-        const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/comum?select=*`);
+        const table = process.env.SUPABASE_TABLE_POLOS || "musicalizacao_polos";
+        const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?select=*`);
         try {
           const response = await fetch(url, {
             headers: {
