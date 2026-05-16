@@ -717,7 +717,8 @@ async function handleRequest(req, res) {
           const userId = url.searchParams.get("id");
           if (!userId) return sendJson(res, 400, { error: "ID do usuário ausente." });
           
-          const tables = ['profiles'];
+          const profileTable = process.env.SUPABASE_TABLE_AUXILIARES || 'profiles';
+          const tables = [profileTable];
           let profile = null;
 
           for (const table of tables) {

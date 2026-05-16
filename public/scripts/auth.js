@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (feedback) feedback.textContent = 'Erro: ' + translateError(error.message);
       } else {
         // Limpar apenas configurações específicas de dados, mas NÃO a sessão do Supabase
-        sessionStorage.removeItem('recitativos_config');
+        sessionStorage.removeItem('musicalizacao_config');
         window.location.href = '/';
       }
     });
@@ -152,10 +152,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Conta Criada!',
         text: 'Sua conta foi criada com sucesso. Faça login para continuar.',
         icon: 'success',
-        confirmButtonColor: '#003049'
+        confirmButtonColor: '#1e4b7a'
       }).then(() => {
         // Limpar estados locais ao criar conta
-        sessionStorage.removeItem('recitativos_config');
+        sessionStorage.removeItem('musicalizacao_config');
         window.location.href = '/login.html';
       });
     });

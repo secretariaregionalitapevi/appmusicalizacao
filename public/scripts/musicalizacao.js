@@ -81,15 +81,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       <div class="grid-counts" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px;">
         <div class="form-group">
-          <label style="font-size: 10px;">Colab.</label>
+          <label style="font-size: 11px;">Colaboradores</label>
           <input type="number" name="colaboradores_${index}" min="0" value="0" class="count-input" style="font-size: 14px; height: 35px;">
         </div>
         <div class="form-group">
-          <label style="font-size: 10px;">Coord.</label>
+          <label style="font-size: 11px;">Coordenadores</label>
           <input type="number" name="coordenadores_${index}" min="0" value="0" class="count-input" style="font-size: 14px; height: 35px;">
         </div>
         <div class="form-group">
-          <label style="font-size: 10px;">Instr.</label>
+          <label style="font-size: 11px;">Instrutores</label>
           <input type="number" name="instrutores_${index}" min="0" value="0" class="count-input" style="font-size: 14px; height: 35px;">
         </div>
       </div>
