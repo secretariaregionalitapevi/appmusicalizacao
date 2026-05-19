@@ -553,6 +553,80 @@ function validateRequired(tipo, payload) {
   });
 }
 
+async function verifySupabaseToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.split(" ")[1];
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error("SUPABASE_URL ou SUPABASE_ANON_KEY ausentes para validar token.");
+    return null;
+  }
+
+  try {
+    const url = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error("Erro ao validar token do Supabase:", err);
+    return null;
+  }
+}
+
+async function getUserProfile(userId, email = null) {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+
+  const auxTable = process.env.SUPABASE_TABLE_AUXILIARES || "profiles";
+  const tables = [...new Set(["profiles", auxTable])];
+
+  for (const table of tables) {
+    try {
+      // 1. Tenta buscar por 'id'
+      const urlId = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}?id=eq.${userId}&select=*`);
+      const resId = await fetch(urlId, {
+        headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+      });
+      if (resId.ok) {
+        const dataId = await resId.json();
+        if (Array.isArray(dataId) && dataId.length > 0) return dataId[0];
+      }
+
+      // 2. Tenta buscar por 'user_id'
+      const urlUserId = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}?user_id=eq.${userId}&select=*`);
+      const resUserId = await fetch(urlUserId, {
+        headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+      });
+      if (resUserId.ok) {
+        const dataUserId = await resUserId.json();
+        if (Array.isArray(dataUserId) && dataUserId.length > 0) return dataUserId[0];
+      }
+
+      // 3. Tenta buscar por 'email'
+      if (email) {
+        const urlEmail = new URL(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}?email=eq.${email}&select=*`);
+        const resEmail = await fetch(urlEmail, {
+          headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
+        });
+        if (resEmail.ok) {
+          const dataEmail = await resEmail.json();
+          if (Array.isArray(dataEmail) && dataEmail.length > 0) return dataEmail[0];
+        }
+      }
+    } catch (err) {
+      console.warn(`Erro ao buscar perfil na tabela ${table}:`, err.message);
+    }
+  }
+
+  return null;
+}
+
 async function serveStatic(reqPath, res) {
   const normalized = path.normalize(reqPath).replace(/^([.][.][/\\])+/, "");
   const filePath = path.join(publicDir, normalized);
@@ -613,6 +687,26 @@ async function handleRequest(req, res) {
 
     // --- ROTA DE LANÇAMENTO (POST) - Prioridade Máxima para Produção ---
     if (req.method === "POST" && p === "/api/atividades") {
+      const authUser = await verifySupabaseToken(req.headers.authorization);
+      if (!authUser) {
+        return sendJson(res, 401, { error: "Não autorizado. Faça login novamente." });
+      }
+
+      const profile = await getUserProfile(authUser.id);
+      if (!profile) {
+        return sendJson(res, 403, { error: "Acesso negado: Perfil de usuário não encontrado." });
+      }
+
+      // Check role authorization (Allowed: Master/1, Admin/2, Coordenador/3, Instrutor/4)
+      const allowedRoles = [1, 2, 3, 4];
+      const userRoleId = parseInt(profile.role_id || profile.nivel || 0, 10);
+      if (!allowedRoles.includes(userRoleId)) {
+        return sendJson(res, 403, { 
+          error: "Acesso negado: seu nível de acesso não permite fazer lançamentos nesta aplicação.",
+          role_id: userRoleId
+        });
+      }
+
       const payload = await readJsonBody(req);
       console.log("[DEBUG] Recebendo Payload no Servidor:", JSON.stringify(payload, null, 2));
       
@@ -715,54 +809,10 @@ async function handleRequest(req, res) {
 
         if (req.method === "GET") {
           const userId = url.searchParams.get("id");
+          const userEmail = url.searchParams.get("email");
           if (!userId) return sendJson(res, 400, { error: "ID do usuário ausente." });
           
-          const profileTable = process.env.SUPABASE_TABLE_AUXILIARES || 'profiles';
-          const tables = [profileTable];
-          let profile = null;
-
-          for (const table of tables) {
-            try {
-              // 1. Tenta buscar por 'id'
-              const urlId = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?id=eq.${userId}&select=*`);
-              const resId = await fetch(urlId, {
-                headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-              });
-              const dataId = await resId.json();
-              if (dataId && dataId.length > 0) {
-                profile = dataId[0];
-                break;
-              }
-
-              // 2. Tenta buscar por 'user_id'
-              const urlUserId = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?user_id=eq.${userId}&select=*`);
-              const resUserId = await fetch(urlUserId, {
-                headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-              });
-              const dataUserId = await resUserId.json();
-              if (dataUserId && dataUserId.length > 0) {
-                profile = dataUserId[0];
-                break;
-              }
-
-              // 3. Tenta buscar por 'email' (fallback final)
-              const userEmail = url.searchParams.get("email");
-              if (userEmail) {
-                const urlEmail = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?email=eq.${userEmail}&select=*`);
-                const resEmail = await fetch(urlEmail, {
-                  headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-                });
-                const dataEmail = await resEmail.json();
-                if (dataEmail && dataEmail.length > 0) {
-                  profile = dataEmail[0];
-                  break;
-                }
-              }
-            } catch (err) {
-              console.warn(`Erro ao buscar perfil na tabela ${table}:`, err.message);
-            }
-          }
-
+          const profile = await getUserProfile(userId, userEmail);
           return sendJson(res, 200, profile || {});
         }
 

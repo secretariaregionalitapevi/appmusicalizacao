@@ -197,8 +197,38 @@
           const userEmail = window.currentUser?.email || '';
 
           if (userId) {
-            const profileRes = await fetch(`/api/profile?id=${userId}&email=${encodeURIComponent(userEmail)}`);
+            const profileRes = await window.authFetch(`/api/profile?id=${userId}&email=${encodeURIComponent(userEmail)}`);
             let profileData = await profileRes.json();
+
+            // Verificação de permissão baseada em nível/cargo
+            const allowedRoles = [1, 2, 3, 4];
+            const userRoleId = parseInt(profileData.role_id || profileData.nivel || 0, 10);
+            if (!allowedRoles.includes(userRoleId)) {
+              document.getElementById('mes').disabled = true;
+              document.getElementById('comumSearch').disabled = true;
+              document.querySelectorAll('.grid-btns button').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.removeAttribute('onclick');
+              });
+
+              Swal.fire({
+                title: 'Acesso Restrito',
+                html: `<div style="text-align: left; font-size: 14px; line-height: 1.6; color: #475569;">
+                        <p style="margin-bottom: 12px;">Olá, <strong>${profileData.full_name || 'Usuário'}</strong>!</p>
+                        <p style="margin-bottom: 12px;">Seu nível de acesso atual (<strong>${profileData.cargo || 'Candidato'}</strong>) não possui permissão para realizar novos lançamentos no aplicativo de Musicalização.</p>
+                        <p style="margin-bottom: 12px; font-weight: 600; color: #b91c1c;">⚠️ Lançamentos nesta seção são permitidos apenas para a Coordenação e Instrutores habilitados.</p>
+                        <p style="margin-top: 15px; font-size: 13px; color: #64748b;">Se você acredita que isso é um erro, entre em contato com o Secretário Regional da Música.</p>
+                       </div>`,
+                icon: 'warning',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdrop: `rgba(15, 23, 42, 0.85)`
+              });
+            }
 
             const profile = {
               comum: profileData.polo || profileData.comum || profileData.congregacao || profileData.localidade || '',

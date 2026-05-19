@@ -47,6 +47,20 @@ window.checkAuth = async () => {
   return user;
 };
 
+window.authFetch = async (url, options = {}) => {
+  if (!supabaseClient) await initSupabase();
+  
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+  
+  options.headers = options.headers || {};
+  if (token) {
+    options.headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  return fetch(url, options);
+};
+
 const errorTranslations = {
   'Invalid login credentials': 'E-mail ou senha incorretos.',
   'Email not confirmed': 'E-mail não confirmado. Verifique sua caixa de entrada.',

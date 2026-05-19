@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let name = user.user_metadata?.full_name;
     if (!name) {
       try {
-        const res = await fetch(`/api/profile?id=${user.id}`);
+        const res = await window.authFetch(`/api/profile?id=${user.id}`);
         const profile = await res.json();
         if (profile.full_name) name = profile.full_name;
       } catch (err) {
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       for (const entry of entries) {
-        const res = await fetch('/api/atividades', {
+        const res = await window.authFetch('/api/atividades', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entry)
