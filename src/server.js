@@ -41,12 +41,18 @@ let SUPABASE_URL = process.env.SUPABASE_URL || "";
 let SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 let SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// Auto-correção dinâmica para alinhar com a base unificada das outras aplicações
-if (!SUPABASE_URL || SUPABASE_URL.includes("wfqehmdawhfjqpjapp")) {
+// Auto-correção dinâmica para alinhar com a base unificada de todas as aplicações
+if (!SUPABASE_URL || !SUPABASE_URL.includes("sqamxlhfazulrisiptud")) {
   SUPABASE_URL = "https://sqamxlhfazulrisiptud.supabase.co";
   SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxYW14bGhmYXp1bHJpc2lwdHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzU4ODQsImV4cCI6MjA4Mjk1MTg4NH0.UmshkDqIgJQYVMmWVVgmfQm-YacUbRBeSpmYsNG0baE";
   SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxYW14bGhmYXp1bHJpc2lwdHVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzM3NTg4NCwiZXhwIjoyMDgyOTUxODg0fQ.w92yMKGGh5-ewRq0q6Pdl8TstzGlx0sGms1FCRveDYc";
 }
+
+// Propagar as chaves unificadas de volta ao process.env para que todos os handlers internos as acessem
+process.env.SUPABASE_URL = SUPABASE_URL;
+process.env.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+process.env.SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SERVICE_ROLE_KEY;
+
 const SUPABASE_TABLE_RECITATIVOS = process.env.SUPABASE_TABLE_RECITATIVOS || "recitativos";
 const WEBHOOK_RECITATIVOS = process.env.WEBHOOK_RECITATIVOS || "";
 const SUPABASE_TABLE_POLOS = process.env.SUPABASE_TABLE_POLOS || "musicalizacao_polos";
@@ -707,7 +713,7 @@ async function handleRequest(req, res) {
 
       // Check role authorization (Allowed: Master/1, Admin/2, Coordenador/3, Instrutor/4)
       const allowedRoles = [1, 2, 3, 4];
-      const userRoleId = parseInt(profile.role_id || profile.nivel || 0, 10);
+      const userRoleId = parseInt(profile.role_id || profile.nivel || 6, 10);
       if (!allowedRoles.includes(userRoleId)) {
         return sendJson(res, 403, { 
           error: "Acesso negado: seu nível de acesso não permite fazer lançamentos nesta aplicação.",
@@ -834,6 +840,21 @@ async function handleRequest(req, res) {
             if (!profileData.id) return sendJson(res, 400, { error: "ID do usuário obrigatório." });
 
             const table = process.env.SUPABASE_TABLE_AUXILIARES || 'profiles';
+            
+            // Map payload columns to match table schemas dynamically
+            const mappedData = { ...profileData };
+            if (table === "profiles") {
+              if (mappedData.id && !mappedData.user_id) {
+                mappedData.user_id = mappedData.id;
+              }
+              delete mappedData.id;
+            } else if (table === "rjm_auxiliares") {
+              if (mappedData.user_id && !mappedData.id) {
+                mappedData.id = mappedData.user_id;
+              }
+              delete mappedData.user_id;
+            }
+
             const urlUpsert = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}`);
             const response = await fetch(urlUpsert, {
               method: "POST",
@@ -843,7 +864,7 @@ async function handleRequest(req, res) {
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates"
               },
-              body: JSON.stringify(profileData)
+              body: JSON.stringify(mappedData)
             });
 
             if (!response.ok) {

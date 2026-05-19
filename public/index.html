@@ -202,7 +202,7 @@
 
             // Verificação de permissão baseada em nível/cargo
             const allowedRoles = [1, 2, 3, 4];
-            const userRoleId = parseInt(profileData.role_id || profileData.nivel || 0, 10);
+            const userRoleId = parseInt(profileData.role_id || profileData.nivel || 6, 10);
             if (!allowedRoles.includes(userRoleId)) {
               document.getElementById('mes').disabled = true;
               document.getElementById('comumSearch').disabled = true;
