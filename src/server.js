@@ -36,9 +36,17 @@ const PORT = Number(process.env.PORT || 3000);
 const WEBHOOK_CRIANCA = process.env.WEBHOOK_CRIANCA || "";
 const WEBHOOK_MONITOR = process.env.WEBHOOK_MONITOR || "";
 const WEBHOOK_CADASTRO = process.env.WEBHOOK_CADASTRO || "https://webhooks.rendamais.com.br/webhook/304a56e6-8f63-4b8c-9798-3e0a35f6be70-musicalizacao-infiantil";
-const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+let SUPABASE_URL = process.env.SUPABASE_URL || "";
+let SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+let SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+// Auto-correção dinâmica para alinhar com a base unificada das outras aplicações
+if (!SUPABASE_URL || SUPABASE_URL.includes("wfqehmdawhfjqpjapp")) {
+  SUPABASE_URL = "https://sqamxlhfazulrisiptud.supabase.co";
+  SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxYW14bGhmYXp1bHJpc2lwdHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzU4ODQsImV4cCI6MjA4Mjk1MTg4NH0.UmshkDqIgJQYVMmWVVgmfQm-YacUbRBeSpmYsNG0baE";
+  SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxYW14bGhmYXp1bHJpc2lwdHVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzM3NTg4NCwiZXhwIjoyMDgyOTUxODg0fQ.w92yMKGGh5-ewRq0q6Pdl8TstzGlx0sGms1FCRveDYc";
+}
 const SUPABASE_TABLE_RECITATIVOS = process.env.SUPABASE_TABLE_RECITATIVOS || "recitativos";
 const WEBHOOK_RECITATIVOS = process.env.WEBHOOK_RECITATIVOS || "";
 const SUPABASE_TABLE_POLOS = process.env.SUPABASE_TABLE_POLOS || "musicalizacao_polos";
