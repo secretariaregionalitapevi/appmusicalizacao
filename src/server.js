@@ -897,10 +897,16 @@ async function handleRequest(req, res) {
       }
 
       if (pathname === "/api/config") {
-        sendJson(res, 200, {
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0"
+        });
+        res.end(JSON.stringify({
           url: SUPABASE_URL,
           anonKey: SUPABASE_ANON_KEY
-        });
+        }));
         return;
       }
 
