@@ -244,7 +244,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || 'Erro no envio.');
+          const errObj = new Error(body.error || 'Erro no envio.');
+          errObj.status = res.status;
+          throw errObj;
         }
       }
       // Montar lista de datas das aulas submetidas (para presença nominal)
@@ -282,14 +284,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     } catch (err) {
-      Swal.fire({
-        title: 'Erro',
-        text: err.message,
-        icon: 'error',
-        confirmButtonColor: '#1e4b7a',
-        timer: 4000,
-        timerProgressBar: true
-      });
+      if (err.status === 409) {
+        Swal.fire({
+          title: 'Lançamento Bloqueado',
+          html: `<div style="font-size:15px; color:#475569; text-align:center;">${err.message}</div>`,
+          icon: 'warning',
+          confirmButtonColor: '#1e4b7a',
+          confirmButtonText: 'Entendi'
+        });
+      } else {
+        Swal.fire({
+          title: 'Erro',
+          text: err.message,
+          icon: 'error',
+          confirmButtonColor: '#1e4b7a',
+          timer: 5000,
+          timerProgressBar: true
+        });
+      }
     } finally {
       isSubmitting = false;
       setSubmittingState(false);

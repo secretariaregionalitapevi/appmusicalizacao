@@ -749,27 +749,37 @@ async function handleRequest(req, res) {
         return sendJson(res, 400, { error: "Campos obrigatórios ausentes.", missing });
       }
 
-      // Ajustar check de duplicidade para novos campos
-      const existingRecitativos = await readSavedRecitativosByDate(finalPayload.data_aula);
-      
-      // Detectar duplicidade baseada em polo e data
-      const duplicateCheck = detectRecitativoDuplicate(finalPayload, existingRecitativos);
-      if (duplicateCheck.duplicate) {
-        return sendJson(res, 409, {
-          error: "Este Polo já realizou um lançamento nesta data. Procure a coordenação.",
-          duplicateOf: duplicateCheck.matchedId,
-          duplicateReason: duplicateCheck.reason,
-          duplicate: buildRecitativoDuplicateDetails(duplicateCheck.matchedEntry)
-        });
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "musicalizacao_aulas";
+
+      if (supabaseUrl && supabaseKey) {
+        const checkUrl = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${supabaseTable}`);
+        checkUrl.searchParams.set("polo", `eq.${finalPayload.polo}`);
+        checkUrl.searchParams.set("data_aula", `eq.${finalPayload.data_aula}`);
+        checkUrl.searchParams.set("limit", "1");
+        
+        try {
+          const checkRes = await fetch(checkUrl, {
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (Array.isArray(checkData) && checkData.length > 0) {
+              return sendJson(res, 409, { 
+                error: "Já existe um registro para esta aula no seu polo.<br><br>Para solicitar correções ou alterações, por favor, <b>entre em contato com a coordenação</b>." 
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Erro ao checar duplicidade de aula no Supabase:", err.message);
+        }
       }
 
       // Salvar localmente
       const saved = await saveSubmission("musicalizacao_aula", finalPayload);
 
       // Salvar no Supabase
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseTable = process.env.SUPABASE_TABLE_RECITATIVOS || "musicalizacao_aulas";
 
       if (supabaseUrl && supabaseKey) {
         const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/${supabaseTable}`);
@@ -964,6 +974,26 @@ async function handleRequest(req, res) {
         }
       } catch (err) {
         console.warn("[presenca] Não foi possível buscar aula_id:", err.message);
+      }
+
+      if (aulaId) {
+        // Verificar se já existe lançamento de presença para esta aula
+        const checkUrl = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/musicalizacao_presenca`);
+        checkUrl.searchParams.set("aula_id", `eq.${aulaId}`);
+        checkUrl.searchParams.set("limit", "1");
+        try {
+          const checkRes = await fetch(checkUrl, {
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (Array.isArray(checkData) && checkData.length > 0) {
+              return sendJson(res, 409, { error: "A frequência desta aula já foi registrada anteriormente.<br><br>Se precisar fazer alguma correção, por favor, <b>avise o seu coordenador</b>." });
+            }
+          }
+        } catch (err) {
+          console.warn("[presenca] Erro ao checar duplicidade de presenca:", err.message);
+        }
       }
 
       // 2. Montar registros com a estrutura real da tabela musicalizacao_presenca

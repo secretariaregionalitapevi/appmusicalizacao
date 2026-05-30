@@ -805,7 +805,9 @@
           const data = await res.json();
 
           if (!res.ok) {
-            throw new Error(data.error || 'Erro ao salvar.');
+            const errObj = new Error(data.error || 'Erro ao salvar.');
+            errObj.status = res.status;
+            throw errObj;
           }
 
           Swal.fire({
@@ -840,14 +842,24 @@
           });
 
         } catch (err) {
-          Swal.fire({
-            title: 'Erro',
-            text: err.message,
-            icon: 'error',
-            confirmButtonColor: '#1e4b7a',
-            timer: 5000,
-            timerProgressBar: true
-          });
+          if (err.status === 409) {
+            Swal.fire({
+              title: 'Lançamento Bloqueado',
+              html: `<div style="font-size:15px; color:#475569; text-align:center;">${err.message}</div>`,
+              icon: 'warning',
+              confirmButtonColor: '#1e4b7a',
+              confirmButtonText: 'Entendi'
+            });
+          } else {
+            Swal.fire({
+              title: 'Erro',
+              text: err.message,
+              icon: 'error',
+              confirmButtonColor: '#1e4b7a',
+              timer: 5000,
+              timerProgressBar: true
+            });
+          }
           btn.disabled = false;
           btn.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
