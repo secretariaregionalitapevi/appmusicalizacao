@@ -154,12 +154,13 @@ textarea:focus {
   font-weight: 700;
   font-size: 18px;
   color: var(--brand);
+  width: 100%;
 }
 
 @media (max-width: 480px) {
   .count-input {
     font-size: 16px;
-    height: 48px;
+    height: 40px !important;
   }
 }
 
@@ -219,8 +220,8 @@ textarea:focus {
 
 .grid-counts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 @media (max-width: 600px) {
@@ -228,22 +229,38 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
   .grid-counts {
-    grid-template-columns: repeat(3, 1fr); /* MantÃ©m 3 colunas atÃ© telas bem pequenas */
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px;
+  }
+  .card-body {
+    padding: 20px 15px;
+  }
+  .card-header {
+    padding: 24px 16px !important;
+  }
+  .card-header h1 {
+    font-size: clamp(18px, 5.5vw, 24px) !important;
   }
 }
 
 @media (max-width: 400px) {
   .grid-counts {
-    grid-template-columns: repeat(3, 1fr); /* Força 3 colunas no iPhone 8/SE */
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px;
   }
   .grid-counts label {
-    font-size: 10px; /* Fonte levemente menor para caber em 320px */
+    font-size: 9px !important;
+    letter-spacing: -0.2px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
   .grid-counts .count-input {
     padding: 8px 4px !important;
-    font-size: 15px;
+    font-size: 14px !important;
+  }
+  .card-header h1 {
+    font-size: 18px !important;
   }
 }
 

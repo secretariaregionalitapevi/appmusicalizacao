@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       </div>
 
-      <div class="grid-counts" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px;">
+      <div class="grid-counts" style="margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px;">
         <div class="form-group">
           <label style="font-size: 11px;">Colaboradores</label>
           <input type="number" name="colaboradores_${index}" min="0" value="0" class="count-input" style="font-size: 14px; height: 35px;">
