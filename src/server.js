@@ -60,6 +60,10 @@ const REQUIRE_SUPABASE_DUPLICATE_CHECK = (process.env.REQUIRE_SUPABASE_DUPLICATE
 const ENABLE_LOCAL_PERSISTENCE = (process.env.ENABLE_LOCAL_PERSISTENCE || "false").toLowerCase() === "true";
 const REQUIRE_LOCAL_DUPLICATE_CHECK = (process.env.REQUIRE_LOCAL_DUPLICATE_CHECK || "false").toLowerCase() === "true";
 
+const SUPABASE_TABLE_CADASTROS = process.env.SUPABASE_TABLE_CADASTROS || "";
+const SUPABASE_TABLE_CRIANCA = process.env.SUPABASE_TABLE_CRIANCA || "musicalizacao_criancas";
+const SUPABASE_TABLE_MONITOR = process.env.SUPABASE_TABLE_MONITOR || "musicalizacao_monitores";
+
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",

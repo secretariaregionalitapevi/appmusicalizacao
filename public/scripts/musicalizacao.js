@@ -52,23 +52,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="sunday-card-title">${title}</div>
       ${dateField}
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-        <div class="form-group">
-          <label>Ciclo</label>
-          <select name="ciclo_${index}" class="form-control">
-            <option value="Ciclo 1">Ciclo 1</option>
-            <option value="Ciclo 2">Ciclo 2</option>
-            <option value="Ciclo 3">Ciclo 3</option>
-            <option value="Ciclo 4">Ciclo 4</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Número da Aula (Lição)</label>
-          <input type="number" name="numero_aula_${index}" min="1" value="1" required class="form-control">
-        </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>Ciclo</label>
+        <select name="ciclo_${index}" class="form-control">
+          <option value="Ciclo 1">Ciclo 1</option>
+          <option value="Ciclo 2">Ciclo 2</option>
+          <option value="Ciclo 3">Ciclo 3</option>
+          <option value="Ciclo 4">Ciclo 4</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label>Número da Aula (Lição)</label>
+        <input type="number" name="numero_aula_${index}" min="1" value="1" required class="form-control">
       </div>
 
-      <div class="grid-counts" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 15px;">
+      <div class="grid-counts" style="grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 15px;">
         <div class="form-group">
           <label>Meninas</label>
           <input type="number" name="meninas_${index}" min="0" value="0" required class="count-input">
