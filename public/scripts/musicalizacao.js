@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.auxiliarFullName = name;
     
     summary.innerHTML = `
-      <strong>Mês:</strong> ${config.mes} |
+      <strong>Mês:</strong> ${config.mes}${config.ano ? '/' + config.ano : ''} |
       <strong>Município:</strong> ${config.municipio} |
       <strong>Polo:</strong> ${config.comum} <br>
       <span style="color: var(--brand); font-weight: 700;">Responsável: ${name}</span>
@@ -247,14 +247,40 @@ document.addEventListener('DOMContentLoaded', async () => {
           throw new Error(body.error || 'Erro no envio.');
         }
       }
+      // Montar lista de datas das aulas submetidas (para presença nominal)
+      const datasAulas = entries
+        .filter(e => !e.observacoes || e.observacoes === '')
+        .map(e => e.data_aula)
+        .filter(Boolean);
+
+      // Salvar config para a página de presença
+      sessionStorage.setItem('presenca_config', JSON.stringify({
+        polo: config.comum,
+        municipio: config.municipio,
+        data_aulas: datasAulas.length > 0 ? datasAulas : entries.map(e => e.data_aula).filter(Boolean)
+      }));
+
       Swal.fire({
-        title: 'Sucesso!',
-        text: 'Presença registrada com sucesso.',
+        title: '✅ Enviado com Sucesso!',
+        html: `<div style="font-size:15px; color:#475569; text-align:left; line-height:1.7;">
+          Presença registrada com sucesso.<br><br>
+          <strong style="color:#1e4b7a;">Deseja também registrar a frequência nominal dos alunos?</strong><br>
+          <span style="font-size:13px; color:#64748b;">Marque cada aluno como presente ou faltou.</span>
+        </div>`,
         icon: 'success',
-        timer: 4000,
-        timerProgressBar: true,
-        confirmButtonColor: '#1e4b7a'
-      }).then(() => window.location.href = '/');
+        showCancelButton: true,
+        confirmButtonText: '📋 Lançar Presença Nominal',
+        cancelButtonText: 'Encerrar',
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
+        reverseButtons: false
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.location.href = '/presenca';
+        } else {
+          window.location.href = '/';
+        }
+      });
     } catch (err) {
       Swal.fire({
         title: 'Erro',

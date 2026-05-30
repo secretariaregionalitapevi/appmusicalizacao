@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Presença Nominal - Musicalização Infantil - Regional Itapevi</title>
+  <link rel="icon" type="image/png" href="/assets/favicon.png" />
+  <link rel="stylesheet" href="/styles/main.css?v=1.0.9" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/scripts/auth.js?v=1.0.9"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* === Página de Presença === */
+    .presenca-wrap {
+      padding: 100px 20px 40px;
+      min-height: 100vh;
+      background: #f1f5f9;
+    }
+
+    .presenca-container {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Cabeçalho informativo */
+    .presenca-header-card {
+      background: linear-gradient(135deg, var(--brand) 0%, #123d63 100%);
+      border-radius: 16px;
+      padding: 24px;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(26, 77, 124, 0.35);
+    }
+
+    .presenca-header-card h2 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .presenca-header-card .ph-info {
+      font-size: 13px;
+      opacity: 0.85;
+      margin: 0;
+    }
+
+    /* Seletor de data quando há múltiplas aulas */
+    .presenca-date-select {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .presenca-date-select label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand);
+      text-transform: uppercase;
+      white-space: nowrap;
+      margin: 0;
+    }
+
+    .presenca-date-select select {
+      flex: 1;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      background: #f8fafc;
+    }
+
+    /* Cards de resumo */
+    .presenca-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .summary-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: transform 0.2s;
+    }
+
+    .summary-card:hover { transform: translateY(-2px); }
+
+    .summary-card .sc-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-card .sc-count {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .summary-card.sc-present .sc-count  { color: #059669; }
+    .summary-card.sc-absent .sc-count   { color: #d97706; }
+    .summary-card.sc-justif .sc-count   { color: #2563eb; }
+
+    /* Campo de busca */
+    .presenca-search {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      height: 48px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .presenca-search svg { color: var(--muted); flex-shrink: 0; }
+
+    .presenca-search input {
+      flex: 1;
+      border: none !important;
+      padding: 0 !important;
+      font-size: 15px;
+      background: transparent;
+      height: 100%;
+      outline: none;
+      box-shadow: none !important;
+    }
+
+    /* Lista de alunos */
+    .alunos-list {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .alunos-list-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px;
+      padding: 10px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .aluno-row {
+      border-bottom: 1px solid var(--line);
+      transition: background 0.15s;
+    }
+
+    .aluno-row:last-child { border-bottom: none; }
+    .aluno-row:hover { background: #fafbfc; }
+
+    .aluno-row-main {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 8px;
+    }
+
+    .aluno-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .aluno-nome {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .aluno-sexo-badge {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 18px;
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .badge-m { background: #dbeafe; color: #1d4ed8; }
+    .badge-f { background: #fce7f3; color: #be185d; }
+
+    /* Toggle de presença */
+    .status-toggle {
+      display: flex;
+      border-radius: 50px;
+      overflow: hidden;
+      border: 1.5px solid #e2e8f0;
+      height: 34px;
+      width: 112px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 0 6px;
+    }
+
+    .toggle-btn.presente {
+      background: #f0fdf4;
+      color: #86efac;
+    }
+
+    .toggle-btn.presente.active {
+      background: #059669;
+      color: #fff;
+    }
+
+    .toggle-btn.faltou {
+      background: #fff7ed;
+      color: #fdba74;
+    }
+
+    .toggle-btn.faltou.active {
+      background: #d97706;
+      color: #fff;
+    }
+
+    /* Área de justificativa */
+    .justif-area {
+      padding: 0 16px 12px 56px;
+      display: none;
+      animation: slideDown 0.2s ease;
+    }
+
+    .justif-area.visible { display: block; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .justif-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .justif-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .justif-input {
+      flex: 1;
+      border: none !important;
+      background: transparent !important;
+      font-size: 13px;
+      color: var(--text);
+      padding: 0 !important;
+      height: auto !important;
+      outline: none;
+      box-shadow: none !important;
+      width: 100%;
+    }
+
+    .justif-input::placeholder { color: #92400e; opacity: 0.6; }
+
+    /* Botão Justificar */
+    .btn-justif {
+      font-size: 11px;
+      font-weight: 700;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 50px;
+      padding: 3px 10px;
+      cursor: pointer;
+      margin-top: 4px;
+      margin-left: 56px;
+      margin-bottom: 10px;
+      display: none;
+      transition: all 0.2s;
+    }
+
+    .btn-justif:hover { background: #fde68a; }
+    .btn-justif.visible { display: inline-flex; align-items: center; gap: 4px; }
+    .btn-justif.with-text { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+
+    /* Loading skeleton */
+    .skeleton-row {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      animation: pulse 1.5s infinite;
+    }
+
+    .skeleton-circle {
+      width: 28px; height: 28px;
+      border-radius: 50%; background: #e2e8f0; flex-shrink: 0;
+    }
+
+    .skeleton-line {
+      height: 14px; background: #e2e8f0; border-radius: 6px; flex: 1;
+    }
+
+    .skeleton-btn {
+      width: 90px; height: 28px; background: #e2e8f0; border-radius: 50px; flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Botão salvar */
+    .presenca-footer {
+      position: sticky;
+      bottom: 16px;
+      z-index: 100;
+    }
+
+    .btn-salvar {
+      width: 100%;
+      height: 56px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.4);
+      transition: all 0.3s;
+    }
+
+    .btn-salvar:hover {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(5, 150, 105, 0.45);
+    }
+
+    .btn-salvar:disabled {
+      background: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state svg { margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 15px; margin: 0; }
+
+    /* Row hidden by search filter */
+    .aluno-row.filtered { display: none; }
+
+    @media (max-width: 480px) {
+      .presenca-wrap { padding: 80px 12px 32px; }
+      .presenca-summary { gap: 8px; }
+      .summary-card { padding: 12px 8px; }
+      .summary-card .sc-count { font-size: 26px; }
+      .alunos-list-header { display: none; }
+      .aluno-row-main { grid-template-columns: 32px 1fr 112px; padding: 10px 12px; }
+      .justif-area { padding-left: 44px; }
+      .btn-justif { margin-left: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <div class="top-nav">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="/assets/logo-ccb.png" style="height: 46px;" alt="CCB" />
+      <span style="font-weight: 700; color: var(--brand);">Regional Itapevi</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <a href="/" class="btn-logout btn-back">← Início</a>
+      <a href="#" id="btnLogoutTop" class="btn-logout">Sair</a>
+    </div>
+  </div>
+
+  <main class="presenca-wrap">
+    <div class="presenca-container">
+
+      <!-- Cabeçalho da aula -->
+      <div class="presenca-header-card">
+        <h2>📋 Presença Nominal</h2>
+        <p class="ph-info" id="phInfo">Carregando...</p>
+      </div>
+
+      <!-- Seletor de data (exibido quando há múltiplas aulas) -->
+      <div class="presenca-date-select hidden" id="dateSelectorWrap">
+        <label for="dataAulaSelect">📅 Data da Aula:</label>
+        <select id="dataAulaSelect"></select>
+      </div>
+
+      <!-- Cards de resumo -->
+      <div class="presenca-summary">
+        <div class="summary-card sc-present">
+          <div class="sc-label">Presentes</div>
+          <div class="sc-count" id="countPresente">0</div>
+        </div>
+        <div class="summary-card sc-absent">
+          <div class="sc-label">Faltas</div>
+          <div class="sc-count" id="countFaltou">0</div>
+        </div>
+        <div class="summary-card sc-justif">
+          <div class="sc-label">Justificados</div>
+          <div class="sc-count" id="countJustif">0</div>
+        </div>
+      </div>
+
+      <!-- Busca -->
+      <div class="presenca-search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Pesquisar aluno do polo..." autocomplete="off" />
+      </div>
+
+      <!-- Lista de alunos -->
+      <div class="alunos-list" id="alunosList">
+        <div class="alunos-list-header">
+          <span>#</span>
+          <span>Nome do Aluno</span>
+          <span style="text-align:center;">Status</span>
+        </div>
+        <div id="alunosBody">
+          <!-- Skeletons de carregamento -->
+          <div class="skeleton-row" id="skeletonRows">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Salvar (sticky) -->
+      <div class="presenca-footer">
+        <button class="btn-salvar" id="btnSalvar" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Salvar Frequência
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="sac-page-footer">
+        <span class="footer-brand">&copy; Aplicativo Musicalização Infantil v1.0</span>
+        <a href="#" class="footer-ccb">Congregação Cristã no Brasil</a>
+        <span class="footer-region">Regional Itapevi</span>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    window.addEventListener('load', async () => {
+      window.currentUser = await window.checkAuth();
+
+      // Logout
+      const btnLogout = document.getElementById('btnLogoutTop');
+      if (btnLogout) {
+        btnLogout.onclick = async () => {
+          if (!window.supabaseClient) await window.initSupabase();
+          await window.supabaseClient.auth.signOut();
+          window.location.href = '/login.html';
+        };
+      }
+
+      // ── Ler configuração do sessionStorage ──
+      const config = JSON.parse(sessionStorage.getItem('musicalizacao_config') || 'null');
+      const presencaCfg = JSON.parse(sessionStorage.getItem('presenca_config') || 'null');
+
+      if (!config && !presencaCfg) {
+        Swal.fire({
+          title: 'Sessão inválida',
+          text: 'Nenhuma aula encontrada. Retorne à tela inicial.',
+          icon: 'warning',
+          confirmButtonColor: '#1e4b7a'
+        }).then(() => window.location.href = '/');
+        return;
+      }
+
+      const polo = (presencaCfg || config).comum || (presencaCfg || config).polo || '';
+      const cidade = (presencaCfg || config).municipio || (presencaCfg || config).cidade || '';
+
+      // Coletar datas disponíveis
+      let dataAulas = [];
+      if (presencaCfg && presencaCfg.data_aulas && presencaCfg.data_aulas.length > 0) {
+        dataAulas = presencaCfg.data_aulas;
+      } else if (config && config.sundays && config.sundays.length > 0) {
+        // Converter de dd/mm/yyyy para yyyy-mm-dd
+        dataAulas = config.sundays.map(d => {
+          const [day, month, year] = d.split('/');
+          return `${year}-${month}-${day}`;
+        });
+      } else if (presencaCfg && presencaCfg.data_aula) {
+        dataAulas = [presencaCfg.data_aula];
+      }
+
+      if (dataAulas.length === 0) {
+        Swal.fire({ title: 'Erro', text: 'Nenhuma data de aula encontrada.', icon: 'error', confirmButtonColor: '#1e4b7a' })
+          .then(() => window.location.href = '/');
+        return;
+      }
+
+      // ── Seletor de data (múltiplas aulas) ──
+      const dateSelectorWrap = document.getElementById('dateSelectorWrap');
+      const dataAulaSelect = document.getElementById('dataAulaSelect');
+
+      const formatDateBR = (iso) => {
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+      };
+
+      const formatDateLong = (iso) => {
+        const date = new Date(iso + 'T12:00:00');
+        return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      };
+
+      if (dataAulas.length > 1) {
+        dateSelectorWrap.classList.remove('hidden');
+        dataAulas.forEach(iso => {
+          const opt = document.createElement('option');
+          opt.value = iso;
+          opt.textContent = formatDateBR(iso) + ' (' + formatDateLong(iso) + ')';
+          dataAulaSelect.appendChild(opt);
+        });
+      }
+
+      let currentDataAula = dataAulas[0];
+
+      // ── Atualizar cabeçalho ──
+      const updateHeader = () => {
+        document.getElementById('phInfo').textContent =
+          `Polo: ${polo} | Data: ${formatDateBR(currentDataAula)}`;
+      };
+      updateHeader();
+
+      dataAulaSelect.addEventListener('change', () => {
+        currentDataAula = dataAulaSelect.value;
+        updateHeader();
+        loadAlunos(polo, currentDataAula);
+      });
+
+      // ── Contador dinâmico ──
+      const updateCounts = () => {
+        const rows = document.querySelectorAll('.aluno-row[data-status]');
+        let presente = 0, faltou = 0, justif = 0;
+        rows.forEach(r => {
+          const s = r.dataset.status;
+          if (s === 'presente') presente++;
+          else if (s === 'justificado') justif++;
+          else faltou++;
+        });
+        document.getElementById('countPresente').textContent = presente;
+        document.getElementById('countFaltou').textContent = faltou;
+        document.getElementById('countJustif').textContent = justif;
+      };
+
+      // ── Busca ──
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.trim().toLowerCase();
+        document.querySelectorAll('.aluno-row').forEach(row => {
+          const nome = (row.dataset.nome || '').toLowerCase();
+          row.classList.toggle('filtered', term !== '' && !nome.includes(term));
+        });
+      });
+
+      // ── Criar linha de aluno ──
+      const createAlunoRow = (aluno, index) => {
+        const row = document.createElement('div');
+        row.className = 'aluno-row';
+        row.dataset.id = aluno.id;
+        row.dataset.nome = (aluno.nome_crianca || '').toLowerCase();
+        row.dataset.status = 'faltou';
+
+        const sexo = (aluno.sexo || '').toLowerCase();
+        const isFeminina = sexo === 'f' || sexo === 'feminino' || sexo === 'menina';
+        const badgeClass = isFeminina ? 'badge-f' : 'badge-m';
+        const badgeLetter = isFeminina ? 'F' : 'M';
+
+        row.innerHTML = `
+          <div class="aluno-row-main">
+            <div class="aluno-num">${index + 1}</div>
+            <div class="aluno-nome">
+              <span class="aluno-sexo-badge ${badgeClass}">${badgeLetter}</span>
+              ${aluno.nome_crianca || '—'}
+            </div>
+            <div>
+              <div class="status-toggle">
+                <button type="button" class="toggle-btn presente" data-action="presente" title="Presente">✓ Sim</button>
+                <button type="button" class="toggle-btn faltou active" data-action="faltou" title="Faltou">✗ Não</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-justif visible" title="Adicionar justificativa">
+            📝 Justificar
+          </button>
+          <div class="justif-area">
+            <div class="justif-input-wrap">
+              <span class="justif-icon">📝</span>
+              <input type="text" class="justif-input" placeholder="Motivo da falta (ex: resfriado, viagem...)" maxlength="200" />
+            </div>
+          </div>
+        `;
+
+        const presBtn = row.querySelector('.toggle-btn.presente');
+        const faltBtn = row.querySelector('.toggle-btn.faltou');
+        const btnJustif = row.querySelector('.btn-justif');
+        const justifArea = row.querySelector('.justif-area');
+        const justifInput = row.querySelector('.justif-input');
+
+        const setStatus = (status) => {
+          row.dataset.status = status;
+          presBtn.classList.toggle('active', status === 'presente');
+          faltBtn.classList.toggle('active', status !== 'presente');
+
+          // Mostrar/ocultar botão de justificativa
+          if (status === 'presente') {
+            btnJustif.classList.remove('visible');
+            justifArea.classList.remove('visible');
+            justifInput.value = '';
+          } else {
+            // Verificar se já tem texto
+            const hasText = justifInput.value.trim().length > 0;
+            btnJustif.classList.add('visible');
+            btnJustif.classList.toggle('with-text', hasText);
+            if (hasText) {
+              row.dataset.status = 'justificado';
+              faltBtn.classList.add('active');
+            }
+          }
+
+          updateCounts();
+        };
+
+        presBtn.addEventListener('click', () => setStatus('presente'));
+        faltBtn.addEventListener('click', () => setStatus('faltou'));
+
+        btnJustif.addEventListener('click', () => {
+          justifArea.classList.toggle('visible');
+          if (justifArea.classList.contains('visible')) {
+            justifInput.focus();
+          }
+        });
+
+        justifInput.addEventListener('input', () => {
+          const hasText = justifInput.value.trim().length > 0;
+          btnJustif.classList.toggle('with-text', hasText);
+          btnJustif.textContent = hasText ? '📝 ' + justifInput.value.slice(0, 20) + (justifInput.value.length > 20 ? '…' : '') : '📝 Justificar';
+          row.dataset.status = hasText ? 'justificado' : 'faltou';
+          updateCounts();
+        });
+
+        return row;
+      };
+
+      // ── Carregar alunos ──
+      const loadAlunos = async (polo, dataAula) => {
+        const body = document.getElementById('alunosBody');
+        body.innerHTML = `
+          ${[...Array(5)].map(() => `
+            <div class="skeleton-row">
+              <div class="skeleton-circle"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-btn"></div>
+            </div>
+          `).join('')}
+        `;
+        document.getElementById('btnSalvar').disabled = true;
+
+        try {
+          const res = await window.authFetch(`/api/alunos?polo=${encodeURIComponent(polo)}`);
+          const alunos = await res.json();
+
+          body.innerHTML = '';
+
+          if (!Array.isArray(alunos) || alunos.length === 0) {
+            body.innerHTML = `
+              <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <p>Nenhum aluno cadastrado para este polo.</p>
+              </div>
+            `;
+            return;
+          }
+
+          alunos.forEach((aluno, index) => {
+            body.appendChild(createAlunoRow(aluno, index));
+          });
+
+          updateCounts();
+          document.getElementById('btnSalvar').disabled = false;
+
+        } catch (err) {
+          body.innerHTML = `
+            <div class="empty-state">
+              <p>⚠️ Erro ao carregar alunos. Tente novamente.</p>
+            </div>
+          `;
+          console.error('Erro ao carregar alunos:', err);
+        }
+      };
+
+      // Carga inicial
+      loadAlunos(polo, currentDataAula);
+
+      // ── Salvar presença ──
+      document.getElementById('btnSalvar').addEventListener('click', async () => {
+        const rows = document.querySelectorAll('.aluno-row[data-id]');
+        if (rows.length === 0) return;
+
+        const registros = Array.from(rows).map(row => ({
+          crianca_id: row.dataset.id,
+          nome_crianca: row.dataset.nome.toUpperCase(),
+          status: row.dataset.status || 'faltou',
+          justificativa: (row.querySelector('.justif-input')?.value || '').trim()
+        }));
+
+        const payload = {
+          polo,
+          data_aula: currentDataAula,
+          registros
+        };
+
+        const btn = document.getElementById('btnSalvar');
+        btn.disabled = true;
+        btn.innerHTML = `<span style="animation: pulse 1s infinite">⏳</span> Salvando...`;
+
+        Swal.fire({ title: 'Salvando frequência...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+          const res = await window.authFetch('/api/presenca', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || 'Erro ao salvar.');
+          }
+
+          Swal.fire({
+            title: 'Frequência Salva! ✅',
+            html: `<div style="font-size:15px; color:#475569;">
+              Presença registrada com sucesso para <strong>${formatDateBR(currentDataAula)}</strong>.<br><br>
+              <span style="color:#059669; font-weight:700;">${document.getElementById('countPresente').textContent} presentes</span> &nbsp;|&nbsp;
+              <span style="color:#d97706; font-weight:700;">${document.getElementById('countFaltou').textContent} faltas</span> &nbsp;|&nbsp;
+              <span style="color:#2563eb; font-weight:700;">${document.getElementById('countJustif').textContent} justificados</span>
+            </div>`,
+            icon: 'success',
+            showCancelButton: true,
+            confirmButtonText: 'Ir para Início',
+            cancelButtonText: 'Registrar Outra Data',
+            confirmButtonColor: '#1e4b7a',
+            cancelButtonColor: '#059669'
+          }).then(result => {
+            if (result.isConfirmed) {
+              window.location.href = '/';
+            } else {
+              // Recarregar a seleção se houver múltiplas datas
+              btn.disabled = false;
+              btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Salvar Frequência`;
+            }
+          });
+
+        } catch (err) {
+          Swal.fire({
+            title: 'Erro',
+            text: err.message,
+            icon: 'error',
+            confirmButtonColor: '#1e4b7a',
+            timer: 5000,
+            timerProgressBar: true
+          });
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Salvar Frequência`;
+        }
+      });
+
+    });
+  </script>
+</body>
+</html>

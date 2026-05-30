@@ -685,6 +685,7 @@ function routeToPage(rawPathname) {
   if (p === "/cadastro.html" || p === "/cadastro") return "cadastro.html";
   if (p === "/cadastro/crianca") return "cadastro.html";
   if (p === "/cadastro/monitor") return "cadastro.html";
+  if (p === "/presenca.html" || p === "/presenca") return "presenca.html";
   return null;
 }
 
@@ -884,6 +885,123 @@ async function handleRequest(req, res) {
       }
     }
 
+    // --- ROTA GET /api/alunos ---
+    if (req.method === "GET" && p === "/api/alunos") {
+      const authUser = await verifySupabaseToken(req.headers.authorization);
+      if (!authUser) return sendJson(res, 401, { error: "Não autorizado. Faça login novamente." });
+
+      const polo = url.searchParams.get("polo");
+      if (!polo) return sendJson(res, 400, { error: "Parâmetro 'polo' ausente." });
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !supabaseKey) return sendJson(res, 500, { error: "Configuração do Supabase ausente." });
+
+      const alunosUrl = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/musicalizacao_criancas`);
+      alunosUrl.searchParams.set("select", "id,nome_crianca,sexo");
+      alunosUrl.searchParams.set("polo_participacao", `eq.${polo}`);
+      alunosUrl.searchParams.set("order", "nome_crianca.asc");
+      alunosUrl.searchParams.set("limit", "500");
+
+      try {
+        const response = await fetch(alunosUrl, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        });
+        if (!response.ok) {
+          const err = await response.text();
+          return sendJson(res, 500, { error: "Erro ao buscar alunos.", details: err });
+        }
+        const alunos = await response.json();
+        return sendJson(res, 200, Array.isArray(alunos) ? alunos : []);
+      } catch (err) {
+        return sendJson(res, 500, { error: "Falha ao conectar com Supabase.", details: err.message });
+      }
+    }
+
+    // --- ROTA POST /api/presenca ---
+    if (req.method === "POST" && p === "/api/presenca") {
+      const authUser = await verifySupabaseToken(req.headers.authorization);
+      if (!authUser) return sendJson(res, 401, { error: "Não autorizado. Faça login novamente." });
+
+      const profile = await getUserProfile(authUser.id);
+      if (!profile) return sendJson(res, 403, { error: "Acesso negado: Perfil não encontrado." });
+
+      const allowedRoles = [1, 2, 3, 4];
+      const userRoleId = parseInt(profile.role_id || profile.nivel || 6, 10);
+      if (!allowedRoles.includes(userRoleId)) {
+        return sendJson(res, 403, { error: "Acesso negado: nível sem permissão." });
+      }
+
+      const body = await readJsonBody(req);
+      const { polo, data_aula, registros } = body;
+
+      if (!polo || !data_aula || !Array.isArray(registros) || registros.length === 0) {
+        return sendJson(res, 400, { error: "Dados incompletos. Informe polo, data_aula e registros." });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !supabaseKey) return sendJson(res, 500, { error: "Configuração do Supabase ausente." });
+
+      // 1. Buscar o aula_id correspondente ao polo + data_aula
+      const aulaUrl = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/musicalizacao_aulas`);
+      aulaUrl.searchParams.set("select", "id");
+      aulaUrl.searchParams.set("polo", `eq.${polo}`);
+      aulaUrl.searchParams.set("data_aula", `eq.${data_aula}`);
+      aulaUrl.searchParams.set("order", "created_at.desc");
+      aulaUrl.searchParams.set("limit", "1");
+
+      let aulaId = null;
+      try {
+        const aulaRes = await fetch(aulaUrl, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        });
+        if (aulaRes.ok) {
+          const aulaData = await aulaRes.json();
+          if (Array.isArray(aulaData) && aulaData.length > 0) {
+            aulaId = aulaData[0].id;
+          }
+        }
+      } catch (err) {
+        console.warn("[presenca] Não foi possível buscar aula_id:", err.message);
+      }
+
+      // 2. Montar registros com a estrutura real da tabela musicalizacao_presenca
+      const records = registros.map(r => {
+        const record = {
+          aluno_id: r.crianca_id,           // campo real é aluno_id
+          presente: r.status === "presente", // campo boolean
+          status: r.status || "faltou",
+          observacoes: String(r.justificativa || "").trim()
+        };
+        if (aulaId) record.aula_id = aulaId;
+        return record;
+      });
+
+      const presencaUrl = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/musicalizacao_presenca`);
+      try {
+        const response = await fetch(presencaUrl, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify(records)
+        });
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("[presenca] Supabase error:", errText);
+          return sendJson(res, 500, { error: "Erro ao salvar presença no banco de dados.", details: errText });
+        }
+        return sendJson(res, 201, { message: "Presença registrada com sucesso.", count: records.length, aula_id: aulaId });
+      } catch (err) {
+        return sendJson(res, 500, { error: "Falha ao conectar com Supabase.", details: err.message });
+      }
+    }
+
+
     if (req.method === "GET") {
       const page = routeToPage(pathname);
       if (page) {
@@ -891,7 +1009,7 @@ async function handleRequest(req, res) {
         return;
       }
 
-      if (pathname.startsWith("/styles/") || pathname.startsWith("/scripts/") || pathname.startsWith("/assets/")) {
+      if (pathname.startsWith("/styles/") || pathname.startsWith("/scripts/") || pathname.startsWith("/assets/") || pathname.startsWith("/icons/")) {
         await serveStatic(pathname.slice(1), res);
         return;
       }
