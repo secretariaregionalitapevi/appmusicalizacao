@@ -16,7 +16,7 @@
 </head>
 
 <body style="background: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;">
- 
+
   <main class="auth-wrap">
     <div class="sac-card" style="margin: auto;">
     <div class="sac-header">
@@ -105,6 +105,14 @@
 
         <p id="registerFeedback" style="color: var(--err); font-size: 14px; min-height: 20px;"></p>
 
+        <div class="consent-box">
+          <input type="checkbox" id="consent" name="consent" required />
+          <label for="consent">
+            <span>Eu li e concordo com a</span>
+            <a href="/privacidade.html?from=registro" class="privacy-link">Política de Privacidade</a>
+            <span>e autorizo o tratamento dos meus dados.</span>
+          </label>
+        </div>
         <button type="submit" class="sac-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -141,7 +149,22 @@
         const resComuns = await fetch('/api/comuns');
         allComuns = await resComuns.json();
 
-        const renderResults = (filter = '') => {
+
+        const selectComum = (item) => {
+          if (!item) return false;
+
+          const val = item.dataset.value;
+          const cidade = item.dataset.cidade;
+          comumInput.value = val;
+          comumSearch.value = val;
+          if (document.getElementById('cidadeSelect')) {
+            document.getElementById('cidadeSelect').value = cidade || '';
+          }
+          comumResults.classList.remove('active');
+          return true;
+        };
+
+const renderResults = (filter = '') => {
           const filtered = allComuns.filter(c =>
             c.comum.toLowerCase().includes(filter.toLowerCase()) ||
             c.cidade.toLowerCase().includes(filter.toLowerCase())
@@ -157,7 +180,22 @@
           comumResults.classList.toggle('active', filtered.length > 0 && filter !== '');
         };
 
-        comumSearch.addEventListener('input', (e) => renderResults(e.target.value));
+        comumSearch.addEventListener('input', (e) => {
+          comumInput.value = '';
+          if (document.getElementById('cidadeSelect')) {
+            document.getElementById('cidadeSelect').value = '';
+          }
+          renderResults(e.target.value);
+        });
+        comumSearch.addEventListener('keydown', (e) => {
+          if ((e.key === 'Enter' || e.key === 'Tab') && comumResults.classList.contains('active')) {
+            const firstItem = comumResults.querySelector('.sac-search-item');
+            if (firstItem) {
+              e.preventDefault();
+              selectComum(firstItem);
+            }
+          }
+        });
         comumSearch.addEventListener('focus', () => {
           if (comumSearch.value === '') renderResults('');
           comumResults.classList.add('active');
@@ -165,16 +203,7 @@
 
         comumResults.addEventListener('mousedown', (e) => {
           const item = e.target.closest('.sac-search-item');
-          if (item) {
-            const val = item.dataset.value;
-            const cidade = item.dataset.cidade;
-            comumInput.value = val;
-            comumSearch.value = val;
-            if (document.getElementById('cidadeSelect')) {
-              document.getElementById('cidadeSelect').value = cidade || '';
-            }
-            comumResults.classList.remove('active');
-          }
+          selectComum(item);
         });
 
         document.addEventListener('click', (e) => {

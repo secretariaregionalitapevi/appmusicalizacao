@@ -686,6 +686,7 @@ function routeToPage(rawPathname) {
   if (p === "/") return "index.html";
   if (p === "/login.html" || p === "/login") return "login.html";
   if (p === "/registro.html" || p === "/registro") return "registro.html";
+  if (p === "/privacidade.html" || p === "/privacidade") return "privacidade.html";
   if (p === "/cadastro.html" || p === "/cadastro") return "cadastro.html";
   if (p === "/cadastro/crianca") return "cadastro.html";
   if (p === "/cadastro/monitor") return "cadastro.html";

@@ -77,7 +77,7 @@ function translateError(msg) {
   return msg;
 }
 
-// Lógica para os formulários de login e registro
+// Logica para os formularios de login e registro
 document.addEventListener('DOMContentLoaded', async () => {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (error) {
         if (feedback) feedback.textContent = 'Erro: ' + translateError(error.message);
       } else {
-        // Limpar apenas configurações específicas de dados, mas NÃO a sessão do Supabase
+        // Limpar apenas configuracoes especificas de dados, mas nao a sessao do Supabase
         sessionStorage.removeItem('musicalizacao_config');
         window.location.href = '/';
       }
@@ -116,6 +116,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const comum = e.target.comum.value;
       const cidade = e.target.cidade ? e.target.cidade.value : 'Itapevi';
       const feedback = document.getElementById('registerFeedback');
+      const comumSearch = document.getElementById('comumSearch');
+
+      if (!comum || (comumSearch && comumSearch.value.trim() !== comum.trim())) {
+        if (feedback) feedback.textContent = 'Selecione um Polo da lista antes de criar a conta.';
+        comumSearch?.focus();
+        return;
+      }
 
       if (password !== confirmPassword) {
         if (feedback) feedback.textContent = 'As senhas não coincidem.';
@@ -125,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (feedback) feedback.textContent = 'Criando conta...';
       if (!supabaseClient) await initSupabase();
 
-      // 1. Criar usuário no Auth
+      // 1. Criar usuario no Auth
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email,
         password,
@@ -145,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // 2. Salvar perfil na tabela rjm_auxiliares via API do servidor (seguro contra RLS/permissão)
+      // 2. Salvar perfil na tabela rjm_auxiliares via API do servidor (seguro contra RLS/permissao)
       try {
         const resProf = await fetch('/api/profile', {
           method: 'POST',
